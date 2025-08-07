@@ -20,9 +20,14 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({'status': 'ok', 'service': 'openmoxie'})
 
 urlpatterns = [
     path('', RedirectView.as_view(url='/hive/', permanent=False), name='root'),
+    path('health/', health_check, name='health'),
     path('hive/', include("hive.urls")),
     path('admin/', admin.site.urls),
 ] + debug_toolbar_urls()

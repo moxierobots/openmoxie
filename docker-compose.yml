@@ -1,30 +1,26 @@
-
 services:
-
   mqtt:
     build:
       context: ./
       dockerfile: ./mqtt.Dockerfile
       platforms:
-          - linux/amd64
-          - linux/arm64
+        - linux/amd64
+        - linux/arm64
     image: openmoxie/openmoxie-mqtt:${OPENMOXIE_VERSION:-latest}
     ports:
       - "8883:8883"
     volumes:
       - ./local/work:/mosquitto/log
-
   server:
     build:
       context: ./
       dockerfile: ./Dockerfile
       platforms:
-          - linux/amd64
-          - linux/arm64
+        - linux/amd64
+        - linux/arm64
     image: openmoxie/openmoxie-server:${OPENMOXIE_VERSION:-latest}
     ports:
       - "8001:8000"
     volumes:
       - ./local/work:/app/site/work
-    depends_on:
-      - mqtt
+    command: ["bash", "start_server.sh"]
