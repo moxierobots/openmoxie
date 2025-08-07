@@ -32,6 +32,7 @@ dependencies = [
     "paho-mqtt==2.1.0",
     "pillow==11.1.0",
     "protobuf==4.25.3",
+    "psycopg2-binary>=2.9.10",
     "pycparser==2.22",
     "pydantic==2.10.6",
     "pydantic-core==2.27.2",

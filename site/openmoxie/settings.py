@@ -92,8 +92,12 @@ WSGI_APPLICATION = 'openmoxie.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DATA_STORE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': 5432,
+        'USER': os.environ.get('DB_USER', 'openmoxie'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'openmoxie'),
+        'NAME': os.environ.get('DB_NAME', 'openmoxie'),
     }
 }
 
@@ -172,23 +176,15 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-        'file': {
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': DATA_STORE_DIR / 'debug.log',
-            'when': 'D',  # Daily rotation
-            'interval': 1,  # Rotate every 1 day
-            'backupCount': 30,  # Keep 30 days
-            'formatter': 'verbose'
-        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'hive': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
