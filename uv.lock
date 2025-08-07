@@ -200,6 +200,15 @@ wheels = [
 ]
 
 [[package]]
+name = "django-db-geventpool"
+version = "4.0.0"
+source = { git = "https://github.com/fampay/django-db-geventpool#00bd20e43adc64461f5a0b10cde8d4f9673f43f4" }
+dependencies = [
+    { name = "django" },
+    { name = "psycogreen" },
+]
+
+[[package]]
 name = "django-debug-toolbar"
 version = "5.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -457,6 +466,7 @@ dependencies = [
     { name = "distro" },
     { name = "django" },
     { name = "django-bootstrap5" },
+    { name = "django-db-geventpool" },
     { name = "django-debug-toolbar" },
     { name = "django-jquery" },
     { name = "exceptiongroup" },
@@ -501,6 +511,7 @@ requires-dist = [
     { name = "distro", specifier = "==1.9.0" },
     { name = "django", specifier = "==5.1.6" },
     { name = "django-bootstrap5", specifier = "==24.3" },
+    { name = "django-db-geventpool", git = "https://github.com/fampay/django-db-geventpool" },
     { name = "django-debug-toolbar", specifier = "==5.0.1" },
     { name = "django-jquery", specifier = "==3.1.0" },
     { name = "exceptiongroup", specifier = "==1.2.2" },
@@ -601,6 +612,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/15/db/7f731524fe0e56c6b2eb57d05b55d3badd80ef7d1f1ed59db191b2fdd8ab/protobuf-4.25.3-cp37-abi3-manylinux2014_x86_64.whl", hash = "sha256:7c8daa26095f82482307bc717364e7c13f4f1c99659be82890dcfc215194554d", size = 294613, upload-time = "2024-02-15T23:44:25.132Z" },
     { url = "https://files.pythonhosted.org/packages/f4/d5/db585a5e8d64af6b384c7b3a63da13df2ff86933e486ba78431736c67c25/protobuf-4.25.3-py3-none-any.whl", hash = "sha256:f0700d54bcf45424477e46a9f0944155b46fb0639d69728739c0e47bab83f2b9", size = 156466, upload-time = "2024-02-15T23:44:36.771Z" },
 ]
+
+[[package]]
+name = "psycogreen"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/72/4a7965cf54e341006ad74cdc72cd6572c789bc4f4e3fadc78672f1fbcfbd/psycogreen-1.0.2.tar.gz", hash = "sha256:c429845a8a49cf2f76b71265008760bcd7c7c77d80b806db4dc81116dbcd130d", size = 5411, upload-time = "2020-02-22T19:55:22.02Z" }
 
 [[package]]
 name = "psycopg2-binary"

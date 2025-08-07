@@ -1,6 +1,7 @@
 # Gunicorn configuration file for OpenMoxie
 import multiprocessing
 import os
+from psycogreen.gevent import patch_psycopg     # use this if you use gevent workers
 
 # Server socket
 bind = "0.0.0.0:8000"
@@ -34,3 +35,7 @@ preload_app = True
 
 # Graceful shutdown
 graceful_timeout = 30
+
+def post_fork(server, worker):
+    patch_psycopg()
+    worker.log.info("Made Psycopg2 Green")
