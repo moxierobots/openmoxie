@@ -29,30 +29,49 @@ cd site
 
 print_status "Starting OpenMoxie server setup..."
 
-# Check if we're in a uv environment
-if ! command -v uv &> /dev/null; then
-    print_error "uv is not installed or not in PATH"
-    exit 1
+# Ensure we're using the virtual environment from the build
+export PATH="/app/.venv/bin:$PATH"
+
+# Ensure site/work directory exists and has proper permissions
+if [ ! -d "work" ]; then
+    print_status "Creating work directory..."
+    mkdir -p work
 fi
+chmod -R 777 work
 
 # Run database migrations
 print_status "Running database migrations..."
-uv run python manage.py migrate
+python manage.py migrate || {
+    print_error "Database migration failed. This might be a permissions issue."
+    # Try to fix permissions
+    find ../site -type d -exec chmod 755 {} \;
+    find ../site -type f -exec chmod 644 {} \;
+    # Try again
+    print_status "Retrying migrations..."
+    python manage.py migrate
+}
 
 # Initialize data if needed
 print_status "Initializing application data..."
-uv run python manage.py init_data
+python manage.py init_data
 
 # Collect static files for production
 print_status "Collecting static files..."
-uv run python manage.py collectstatic --noinput --clear || print_warning "Static files collection failed (non-critical)"
+python manage.py collectstatic --noinput --clear || print_warning "Static files collection failed (non-critical)"
 
 # Start the Gunicorn server
 print_status "Starting Gunicorn server with gevent workers..."
 print_status "Server will be available at http://0.0.0.0:8000"
 print_status "Health check available at http://0.0.0.0:8000/health"
 
-exec uv run gunicorn \
+# Ensure log directory exists with proper permissions
+if [ ! -d "work/logs" ]; then
+    print_status "Creating logs directory..."
+    mkdir -p work/logs
+    chmod -R 777 work/logs
+fi
+
+exec gunicorn \
     --config ../gunicorn.conf.py \
     --access-logfile - \
     --error-logfile - \
