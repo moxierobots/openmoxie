@@ -11,6 +11,10 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Set the working directory in the container
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y \
+    libsndfile1 git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies using lockfile
 COPY pyproject.toml uv.lock /app/
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -26,7 +30,7 @@ FROM python:3.12-slim-bookworm
 
 # Install runtime system dependencies
 RUN apt-get update && apt-get install -y \
-    libsndfile1 \
+    libsndfile1 git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
