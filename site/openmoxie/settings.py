@@ -89,10 +89,9 @@ WSGI_APPLICATION = 'openmoxie.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django_db_geventpool.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': 5432,
         'USER': os.environ.get('DB_USER', 'openmoxie'),
@@ -100,10 +99,6 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'openmoxie'),
         'ATOMIC_REQUESTS': False,
         'CONN_MAX_AGE': 0,
-        'OPTIONS': {
-            'MAX_CONNS': 20,
-            'REUSE_CONNS': 10
-        }
     }
 }
 
