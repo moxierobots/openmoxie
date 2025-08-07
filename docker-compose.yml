@@ -24,3 +24,5 @@ services:
     volumes:
       - ./local/work:/app/site/work
     command: ["bash", "start_server.sh"]
+    depends_on:
+      - mqtt
