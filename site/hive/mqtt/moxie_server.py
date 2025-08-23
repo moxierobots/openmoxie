@@ -9,6 +9,10 @@ import re
 import logging
 import base64
 import ssl
+import threading
+import atexit
+import os
+import weakref
 from .ai_factory import set_openai_key
 from .robot_credentials import RobotCredentials
 from .robot_data import RobotData
@@ -56,6 +60,9 @@ class MoxieServer:
     _google_service_account: str
     _robot_data: RobotData
     _remote_chat: RemoteChat
+    _background_thread: threading.Thread
+    _running: bool
+    _process_id: int
     def __init__(self, robot, rbdata, project_id, mqtt_host, mqtt_port, cert_required=True):
         self._robot = robot
         self._robot_data = rbdata
@@ -80,16 +87,30 @@ class MoxieServer:
         self._connect_pattern = r"connected from (.*) as (d_[a-f0-9-]+)"
         self._disconnect_pattern = r"Client (d_[a-f0-9-]+) (closed its connection|disconnected)"
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        self._running = False
+        self._background_thread = None
+        self._process_id = os.getpid()
+        self._is_gevent = self._detect_gevent()
         self.update_from_database()
+        # Register cleanup on process exit
+        atexit.register(self._cleanup_on_exit)
+
+    def _detect_gevent(self):
+        """Detect if we're running under gevent"""
+        try:
+            import gevent
+            return hasattr(gevent, 'monkey') and gevent.monkey.is_module_patched('socket')
+        except ImportError:
+            return False
 
     # Connect to the broker - the jwt stuff left in place, but isn't required
-    def connect(self, start = False):
+    def connect(self, auto_start = True):
         jwt_token = self._robot.create_jwt(self._mqtt_project_id)
         self._client.username_pw_set(username='unknown', password=jwt_token)
         logger.info(f"connecting to: {self._mqtt_endpoint}")
         self._client.connect(self._mqtt_endpoint, self._port, 60)
-        if start:
-            self.start()
+        if auto_start:
+            self.start_background()
 
     # For any external monitoring of connections to the broker
     def add_connect_handler(self, callback):
@@ -123,7 +144,7 @@ class MoxieServer:
         client.subscribe('$SYS/broker/clients/#')
         client.subscribe('$SYS/broker/log/#')
         for ch in self._connect_handlers:
-            ch(self, rc) 
+            ch(self, rc)
 
     # Entry point for ALL incoming messages, extract params about source and route
     def on_message(self, client, userdata, msg):
@@ -143,7 +164,7 @@ class MoxieServer:
                 logger.debug(f"Rx UNK topic: {dec}")
         except Exception as e:
             logging.exception("Error handling mqtt messsage:")
-    
+
 
     # Handle messages FROM mosquitto syslog topic, looking for connect/disconnects
     def on_sys_log_message(self, basetype, msg):
@@ -196,9 +217,9 @@ class MoxieServer:
                     req_id = csa.get('request_id')
                     if _SHARE_GOOGLE_KEY and self._google_service_account:
                         logger.debug(f"Providing google speech credentials to {device_id}")
-                        self.send_command_to_bot_json(device_id, 'query_result', 
+                        self.send_command_to_bot_json(device_id, 'query_result',
                                                     { 'command': 'query_result', 'request_id': req_id, 'query': 'license',
-                                                    'license_values': [ 
+                                                    'license_values': [
                                                         { 'id': 'google_speech', 'license': self._google_service_account}
                                                         ]
                                                         })
@@ -342,24 +363,51 @@ class MoxieServer:
     def print_metrics(self):
         logger.info(f"Client Metrics: {self._client_metrics}")
 
-    # Start client connection loop
+    # Start client connection loop in background thread
+    def start_background(self):
+        if not self._running:
+            self._running = True
+            logger.info(f"Starting MQTT client in background thread for process {self._process_id}")
+            self._client.loop_start()
+
+    def _run_client_loop(self):
+        """Run the MQTT client loop in a background thread"""
+        try:
+            self._client.loop_start()
+            logger.info(f"MQTT client loop started for process {self._process_id}")
+        except Exception as e:
+            logger.error(f"Error starting MQTT client loop: {e}")
+            self._running = False
+
+    # Legacy method for backward compatibility
     def start(self):
-        self._client.loop_start()
+        self.start_background()
 
     # Stop client connection loop
     def stop(self):
-        self._client.loop_stop()
+        if self._running:
+            self._running = False
+            logger.info(f"Stopping MQTT client for process {self._process_id}")
+            self._client.loop_stop()
+            if self._background_thread and self._background_thread.is_alive():
+                self._background_thread.join(timeout=5)
+
+    def _cleanup_on_exit(self):
+        """Cleanup method called on process exit"""
+        if self._running and os.getpid() == self._process_id:
+            logger.info(f"Cleaning up MQTT client for process {self._process_id}")
+            self.stop()
 
     # Get's a chat session object for use in the web chat
     def get_web_session_for_module(self, device_id, module_id, content_id):
         sess = self._remote_chat.get_web_session_for_module(device_id, module_id, content_id)
         sess.set_auto_history(True)
         return sess
-    
+
     # Check global commands for interactive web
     def get_web_session_global_response(self, speech):
         return self._remote_chat.get_web_session_global_response(speech)
-    
+
     # Accessor to remote chat
     def remote_chat(self):
         return self._remote_chat
@@ -405,26 +453,55 @@ class MoxieServer:
 def cleanup_instance():
     global _MOXIE_SERVICE_INSTANCE
     if _MOXIE_SERVICE_INSTANCE:
+        _MOXIE_SERVICE_INSTANCE.stop()
         _MOXIE_SERVICE_INSTANCE._client.disconnect()
         _MOXIE_SERVICE_INSTANCE = None
 
-# Instance method, accessor
+# Instance method, accessor - auto-creates if needed
 def get_instance():
     global _MOXIE_SERVICE_INSTANCE
+    if _MOXIE_SERVICE_INSTANCE is None:
+        try:
+            from django.conf import settings
+            ep = settings.MQTT_ENDPOINT
+            create_service_instance(
+                project_id=ep['project'],
+                host=ep['host'],
+                port=ep['port'],
+                cert_required=ep.get('cert_required', True)
+            )
+            logger.info("Auto-created MoxieServer instance from Django settings")
+        except Exception as e:
+            logger.error(f"Failed to auto-create MoxieServer instance: {e}")
     return _MOXIE_SERVICE_INSTANCE
 
 # Instance method, create singleton service
 def create_service_instance(project_id, host, port, cert_required=True):
     global _MOXIE_SERVICE_INSTANCE
+    current_pid = os.getpid()
+
+    # Check if instance exists and belongs to current process
+    if _MOXIE_SERVICE_INSTANCE and _MOXIE_SERVICE_INSTANCE._process_id == current_pid:
+        return _MOXIE_SERVICE_INSTANCE
+
+    # Clean up any existing instance from different process
+    if _MOXIE_SERVICE_INSTANCE and _MOXIE_SERVICE_INSTANCE._process_id != current_pid:
+        logger.info(f"Cleaning up stale instance from process {_MOXIE_SERVICE_INSTANCE._process_id}, current process is {current_pid}")
+        cleanup_instance()
+
+    # Create new instance for this process
     if not _MOXIE_SERVICE_INSTANCE:
+        logger.info(f"Creating new MoxieServer instance for process {current_pid}")
         creds = RobotCredentials(True)
         rbdata = RobotData()
         _MOXIE_SERVICE_INSTANCE = MoxieServer(creds, rbdata, project_id, host, port, cert_required)
         _MOXIE_SERVICE_INSTANCE.add_zmq_handler('embodied.perception.audio.zmqSTTRequest', STTHandler(_MOXIE_SERVICE_INSTANCE))
-        _MOXIE_SERVICE_INSTANCE.connect(start=True)
-    
+        _MOXIE_SERVICE_INSTANCE.connect(auto_start=True)
+
     return _MOXIE_SERVICE_INSTANCE
-    
+
+
+
 if __name__ == "__main__":
     c = create_service_instance("openmoxie", "duranaki.com", 8883)
     while True:

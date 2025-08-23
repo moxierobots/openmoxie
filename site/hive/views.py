@@ -249,7 +249,7 @@ def puppet_api(request, pk):
         device = MoxieDevice.objects.get(pk=pk)
         if request.method == 'GET':
             # Handle GET request
-            result = { 
+            result = {
                 "online": get_instance().robot_data().device_online(device.device_id),
                 "puppet_state": get_instance().robot_data().get_puppet_state(device.device_id),
                 "puppet_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False
@@ -271,13 +271,13 @@ def puppet_api(request, pk):
             elif cmd == "interrupt":
                 get_instance().send_telehealth_interrupt(device.device_id)
             elif cmd == "speak":
-                get_instance().send_telehealth_speech(device.device_id, request.POST['speech'], 
+                get_instance().send_telehealth_speech(device.device_id, request.POST['speech'],
                                                       request.POST['mood'], float(request.POST['intensity']))
         return JsonResponse({'result': True})
     except MoxieDevice.DoesNotExist as e:
         logger.warning("Moxie puppet speak for unfound pk {pk}")
         return HttpResponseBadRequest()
-    
+
 # MOXIE - View Moxie Mission Sets to Complete
 class MoxieMissionsView(generic.DetailView):
     template_name = "hive/missions.html"
@@ -339,7 +339,7 @@ class ExportDataView(generic.TemplateView):
         context['schedules'] = MoxieSchedule.objects.all()
         context['globals'] = GlobalResponse.objects.all()
         return context
-    
+
 # MOXIE - Export Moxie Content Data - Save Action
 @require_http_methods(["POST"])
 def export_data(request):
