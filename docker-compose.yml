@@ -4,6 +4,8 @@ services:
       context: ./
       dockerfile: ./mqtt.Dockerfile
     image: openmoxie/openmoxie-mqtt:${OPENMOXIE_VERSION:-latest}
+    environment:
+      DB_HOST: postgres
     ports:
       - "8883:8883"
     volumes:
