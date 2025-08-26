@@ -5,7 +5,7 @@ import numpy as np
 import io
 import time
 import logging
-import concurrent.futures
+from gevent.threadpool import ThreadPoolExecutor
 from .ai_factory import create_openai
 
 LOG_WAV=False
@@ -36,7 +36,7 @@ class STTSession:
             self._start_ts = req.timestamp
         self._stream_bytes += req.audio_content
         return len(self._stream_bytes)
-    
+
     def perform(self):
         logger.info(f'Processing session_id {self._session_id} with {len(self._stream_bytes)} bytes')
         buffer = io.BytesIO()
@@ -92,7 +92,7 @@ class STTHandler(ZMQHandler):
     def __init__(self, server):
         super().__init__(server)
         self._sessions = {}
-        self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        self._worker_queue = ThreadPoolExecutor(max_workers=5)
 
     def handle_zmq(self, device_id, protoname, protodata):
         req = zmqSTTRequest()
@@ -108,3 +108,11 @@ class STTHandler(ZMQHandler):
             # session is done, do the work
             sess = self._sessions.pop(sesskey)
             self._worker_queue.submit(sess.perform)
+
+    def cleanup(self):
+        """Clean up resources before shutdown or fork"""
+        if hasattr(self, '_worker_queue'):
+            # Shutdown the thread pool executor and wait for threads to finish
+            self._worker_queue.shutdown(wait=True)
+            self._worker_queue = None
+        self._sessions.clear()
