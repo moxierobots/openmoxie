@@ -9,3 +9,5 @@ local/work/**/*
 !local/work/.gitkeep
 site/work/**/*
 .env
+
+site/static/
