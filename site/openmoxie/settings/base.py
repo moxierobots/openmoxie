@@ -29,7 +29,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-     'openmoxie.middleware.HealthCheckMiddleware',
+    'openmoxie.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

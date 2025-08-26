@@ -1,18 +1,16 @@
 """
-Middleware to bypass ALLOWED_HOSTS check and HTTPS redirect for health endpoints from internal IPs.
+Middleware to handle health endpoints from internal IPs without security checks.
 """
 
-from django.utils.deprecation import MiddlewareMixin
-from django.conf import settings
 import ipaddress
 
 
-class HealthCheckMiddleware(MiddlewareMixin):
+class HealthCheckMiddleware:
     """
-    Bypass ALLOWED_HOSTS validation and HTTPS redirect for health check endpoints
-    when accessed from internal/private IP addresses.
+    Handle health check endpoints directly for internal IP addresses,
+    bypassing all other middleware including security checks.
 
-    This middleware must be placed BEFORE SecurityMiddleware in the MIDDLEWARE list.
+    This middleware must be placed FIRST in the MIDDLEWARE list.
     """
 
     # Health check paths
@@ -28,13 +26,9 @@ class HealthCheckMiddleware(MiddlewareMixin):
 
     def __init__(self, get_response):
         self.get_response = get_response
-        # Store original SECURE_SSL_REDIRECT value
-        self.original_ssl_redirect = getattr(settings, 'SECURE_SSL_REDIRECT', False)
 
     def __call__(self, request):
-        # Check if this is a health check from internal IP
-        is_health_check = False
-
+        # Check if this is a health check path
         if request.path in self.HEALTH_PATHS:
             # Get client IP
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -48,25 +42,26 @@ class HealthCheckMiddleware(MiddlewareMixin):
                 ip = ipaddress.ip_address(client_ip)
                 for network in self.INTERNAL_NETWORKS:
                     if ip in ipaddress.ip_network(network):
-                        is_health_check = True
-                        break
+                        # Handle the health check directly here
+                        # This bypasses ALL other middleware
+                        return self.handle_health_check(request)
             except (ValueError, TypeError):
                 pass
 
-        if is_health_check:
-            # Bypass ALLOWED_HOSTS
-            request.get_host = lambda: 'localhost'
-
-            # Temporarily disable SECURE_SSL_REDIRECT
-            settings.SECURE_SSL_REDIRECT = False
-
-            try:
-                response = self.get_response(request)
-            finally:
-                # Restore original SECURE_SSL_REDIRECT value
-                settings.SECURE_SSL_REDIRECT = self.original_ssl_redirect
-
-            return response
-
-        # Normal request processing
+        # Continue with normal middleware chain
         return self.get_response(request)
+
+    def handle_health_check(self, request):
+        """
+        Handle health check directly.
+        You can customize this or import your actual health check logic.
+        """
+        # Simple health check response
+        # You can import and call your actual health view here if needed
+        from django.http import JsonResponse
+
+        # Basic health check
+        return JsonResponse({
+            'status': 'healthy',
+            'service': 'openmoxie'
+        }, status=200)
