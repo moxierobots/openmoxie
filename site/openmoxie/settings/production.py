@@ -135,5 +135,11 @@ MQTT_ENDPOINT.update({
 CONN_MAX_AGE = 600
 CONN_HEALTH_CHECKS = True
 
-# Compress static files
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# Compress static files with WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise configuration for production
+WHITENOISE_COMPRESS_OFFLINE = True
+WHITENOISE_AUTOREFRESH = False
+WHITENOISE_USE_FINDERS = False
+WHITENOISE_MANIFEST_STRICT = False

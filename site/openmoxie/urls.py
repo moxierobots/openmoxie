@@ -32,6 +32,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ] + debug_toolbar_urls()
 
-# for now, we only serve our own static content
-if True or settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# WhiteNoise handles static files serving in production
+# In development, Django's staticfiles app handles it when DEBUG=True
+if settings.DEBUG:
+    # Only add media files handling in development
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

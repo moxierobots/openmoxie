@@ -48,7 +48,12 @@ DATABASES['default'].update({
 # Static files configuration for development
 STATICFILES_DIRS = [
     BASE_DIR / 'static_dev',
-]
+] if (BASE_DIR / 'static_dev').exists() else []
+
+# WhiteNoise configuration for development
+WHITENOISE_AUTOREFRESH = True  # Auto-refresh static files in development
+WHITENOISE_USE_FINDERS = True  # Use Django's static file finders
+WHITENOISE_COMPRESS_OFFLINE = False  # Don't compress in development
 
 # Media files configuration for development
 MEDIA_ROOT = BASE_DIR / 'media_dev'

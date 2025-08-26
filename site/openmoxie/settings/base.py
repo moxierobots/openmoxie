@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'openmoxie.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -121,8 +122,13 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_URL = config('STATIC_URL', default='/static/')
+STATIC_ROOT = config('STATIC_ROOT', default=str(BASE_DIR / 'static'))
+
+# WhiteNoise configuration for serving static files
+WHITENOISE_AUTOREFRESH = config('DEBUG', default=False, cast=bool)
+WHITENOISE_USE_FINDERS = config('DEBUG', default=False, cast=bool)
+WHITENOISE_COMPRESS_OFFLINE = not config('DEBUG', default=False, cast=bool)
 
 # Media files
 MEDIA_URL = '/media/'

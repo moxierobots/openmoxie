@@ -57,7 +57,46 @@ python manage.py init_data
 
 # Collect static files for production
 print_status "Collecting static files..."
-python manage.py collectstatic --noinput --clear || print_warning "Static files collection failed (non-critical)"
+
+# Use the STATIC_ROOT from environment if set, otherwise use default
+if [ ! -z "$STATIC_ROOT" ]; then
+    print_status "Using STATIC_ROOT: $STATIC_ROOT"
+    # Ensure the parent directory exists
+    STATIC_DIR=$(dirname "$STATIC_ROOT")
+    if [ ! -d "$STATIC_DIR" ]; then
+        print_status "Creating parent directory: $STATIC_DIR"
+        mkdir -p "$STATIC_DIR"
+    fi
+    # Ensure the static directory exists
+    mkdir -p "$STATIC_ROOT"
+    # Set appropriate permissions
+    chmod -R 755 "$STATIC_ROOT" 2>/dev/null || true
+else
+    # Default static root location
+    DEFAULT_STATIC_ROOT="/app/site/static"
+    print_status "No STATIC_ROOT set, using default: $DEFAULT_STATIC_ROOT"
+    mkdir -p "$DEFAULT_STATIC_ROOT"
+    chmod -R 755 "$DEFAULT_STATIC_ROOT" 2>/dev/null || true
+fi
+
+# Run collectstatic with better error handling
+print_status "Running collectstatic command..."
+python manage.py collectstatic --noinput --clear 2>&1 | while IFS= read -r line; do
+    if [[ "$line" == *"error"* ]] || [[ "$line" == *"Error"* ]]; then
+        print_error "$line"
+    elif [[ "$line" == *"warning"* ]] || [[ "$line" == *"Warning"* ]]; then
+        print_warning "$line"
+    else
+        echo "$line"
+    fi
+done
+
+# Check if static files were collected successfully
+if [ $? -eq 0 ]; then
+    print_status "Static files collected successfully"
+else
+    print_warning "Static files collection completed with warnings"
+fi
 
 # Start the Gunicorn server
 print_status "Starting Gunicorn server with gevent workers..."
