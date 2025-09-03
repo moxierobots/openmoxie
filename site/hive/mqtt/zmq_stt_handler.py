@@ -60,6 +60,7 @@ class STTSession:
                 file=('test.wav', wav_bytes),
                 model=OPENAI_MODEL,
                 response_format="verbose_json",
+                language="en",
                 timestamp_granularities=["word"])
             resp.speech = transcript.text
             min_start = min(d.start for d in transcript.words) if transcript.words else 0
