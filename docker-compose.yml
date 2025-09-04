@@ -12,9 +12,11 @@ services:
     volumes:
       - ./site/data/emqx.conf:/opt/emqx/etc/emqx.conf
     environment:
-      - EMQX_LOG__LEVEL=debug
-      - EMQX_LOG__CONSOLE_HANDLER__ENABLE=true
-      - EMQX_LOG__CONSOLE_HANDLER__LEVEL=debug
+      - EMQX_NODE__COOKIE=openmoxie_secure_cookie_2024
+      - EMQX_LOG__CONSOLE__ENABLE=true
+      - EMQX_LOG__CONSOLE__LEVEL=debug
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
   server:
     build:
       context: ./
