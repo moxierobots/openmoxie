@@ -1,8 +1,5 @@
 FROM emqx/emqx:5.6.0
 
-# Copy EMQX configuration
-COPY ./site/data/emqx.conf /opt/emqx/etc/emqx.conf
-
 # Create logs directory
 RUN mkdir -p /opt/emqx/log
 
