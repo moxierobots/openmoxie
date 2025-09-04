@@ -1,0 +1,31 @@
+# Mosquitto Access Control List (ACL)
+# ===================================
+# This file defines topic access permissions for authenticated users
+#
+# Format:
+# user <username>
+# topic [read|write|readwrite] <topic_pattern>
+#
+# Topic patterns support wildcards:
+# + matches a single level (e.g., sensor/+/temperature)
+# # matches multiple levels (e.g., sensor/#)
+
+# Admin user - full access
+user admin
+topic readwrite #
+
+# Moxie service user - restricted access
+user moxie
+topic readwrite moxie/#
+topic readwrite system/status
+topic read system/logs/#
+
+# Client applications - limited access
+user client
+topic read moxie/status/#
+topic write moxie/commands/#
+topic read system/status
+
+# Anonymous users (if enabled) - very limited access
+# user anonymous
+# topic read public/#
