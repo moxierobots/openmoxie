@@ -11,3 +11,4 @@ site/work/**/*
 .env
 
 site/static/
+emqx/
