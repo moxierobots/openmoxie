@@ -2,21 +2,36 @@ services:
   mqtt:
     build:
       context: ./
-      dockerfile: ./mqtt.Dockerfile
-    image: openmoxie/openmoxie-mqtt:${OPENMOXIE_VERSION:-latest}
+      dockerfile: ./emqx.Dockerfile
     ports:
-      - "8883:8883"
+      - "1883:1883"  # Unencrypted MQTT
+      - "8883:8883"  # TLS MQTT
+      - "8083:8083"  # WebSocket MQTT
+      - "8084:8084"  # Secure WebSocket MQTT
+      - "18083:18083"  # Dashboard
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./local/work:/mosquitto/log
+      - ./emqx/data:/opt/emqx/data
+      - ./emqx/log:/opt/emqx/log
+      - ./emqx/etc:/opt/emqx/etc
+    environment:
+      - EMQX_NODE__COOKIE=openmoxie_secure_cookie_2024
+      - EMQX_LOG__CONSOLE__ENABLE=true
+      - EMQX_LOG__CONSOLE__LEVEL=debug
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
+      - EMQX_LISTENERS__TCP__DEFAULT__BIND=0.0.0.0:1883
+      - EMQX_LISTENERS__WS__DEFAULT__BIND=0.0.0.0:8083
+      - EMQX_LISTENERS__WS__DEFAULT__WEBSOCKET__MQTT_PATH=/mqtt
+      - EMQX_DASHBOARD__LISTENERS__HTTP__BIND=18083
+      - EMQX_AUTHORIZATION__NO_MATCH=deny
   server:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    image: openmoxie/openmoxie-server:${OPENMOXIE_VERSION:-latest}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    environment:
-      DB_HOST: postgres
     ports:
       - "8001:8000"
     volumes:
