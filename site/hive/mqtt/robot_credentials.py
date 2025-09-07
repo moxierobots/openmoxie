@@ -30,7 +30,7 @@ class RobotCredentials:
     def __init__(self, fake_monitor=False):
         if fake_monitor:
             self._fake_monitor = True
-            self.device_uuid = "top-secret-supervisor"
+            self.device_uuid = os.getenv('MOXIE_DEVICE_UUID', 'supervisor')
             return
         else:
             self._fake_monitor = False
