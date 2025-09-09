@@ -21,6 +21,7 @@ from .protos.embodied.logging.Log_pb2 import ProtoSubscribe
 from .protos.embodied.logging.Cloud2_pb2 import ServiceConfiguration2
 from .protos.embodied.wifiapp.QRCommands_pb2 import StartPairingQR
 from .zmq_stt_handler import STTHandler
+from .cloudtts_handler import CloudTTSHandler
 from ..models import HiveConfiguration
 
 _BASIC_FORMAT = '{1}'
@@ -496,6 +497,7 @@ def create_service_instance(project_id, host, port, cert_required=True):
         rbdata = RobotData()
         _MOXIE_SERVICE_INSTANCE = MoxieServer(creds, rbdata, project_id, host, port, cert_required)
         _MOXIE_SERVICE_INSTANCE.add_zmq_handler('embodied.perception.audio.zmqSTTRequest', STTHandler(_MOXIE_SERVICE_INSTANCE))
+        _MOXIE_SERVICE_INSTANCE.add_zmq_handler('embodied.unity.CloudTTSRequest', CloudTTSHandler(_MOXIE_SERVICE_INSTANCE))
         _MOXIE_SERVICE_INSTANCE.connect(auto_start=True)
 
     return _MOXIE_SERVICE_INSTANCE
