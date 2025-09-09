@@ -274,7 +274,7 @@ def puppet_api(request, pk):
                 speech = request.POST.get('speech', '')
                 markup = request.POST.get('markup', '')
                 if markup:
-                    # Use custom markup with text
+                    # Use custom markup (text will be empty in markup mode)
                     get_instance().send_telehealth_markup(device.device_id, markup, speech)
                 else:
                     # Use auto-generated markup from text
