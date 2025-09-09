@@ -271,13 +271,14 @@ def puppet_api(request, pk):
             elif cmd == "interrupt":
                 get_instance().send_telehealth_interrupt(device.device_id)
             elif cmd == "speak":
+                speech = request.POST.get('speech', '')
                 markup = request.POST.get('markup', '')
                 if markup:
-                    # Use custom markup
-                    get_instance().send_telehealth_markup(device.device_id, markup, request.POST.get('speech', ''))
+                    # Use custom markup with text
+                    get_instance().send_telehealth_markup(device.device_id, markup, speech)
                 else:
                     # Use auto-generated markup from text
-                    get_instance().send_telehealth_speech(device.device_id, request.POST['speech'],
+                    get_instance().send_telehealth_speech(device.device_id, speech,
                                                           request.POST['mood'], float(request.POST['intensity']))
         return JsonResponse({'result': True})
     except MoxieDevice.DoesNotExist as e:
