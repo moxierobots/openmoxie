@@ -41,9 +41,23 @@
       Intensity<input type="range" min="0.0" max="1.0" step="0.1" id="intensity" name="intensity" value="0.5"></td>
     </div>
     <div class="mb-3">
-      <input id="user_input" name="user_input" class="form-control" placeholder="Say something..."></input>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="use_markup" name="use_markup">
+        <label class="form-check-label" for="use_markup">
+          Use Markup Mode
+        </label>
+      </div>
+    </div>
+    <div class="mb-3" id="text_input_div">
+      <label for="user_input" class="form-label">Text:</label>
+      <input id="user_input" name="user_input" class="form-control" placeholder="Say something... (Press Enter to send)"></input>
+    </div>
+    <div class="mb-3" id="markup_input_div" style="display: none;">
+      <label for="markup_input" class="form-label">Markup:</label>
+      <textarea id="markup_input" name="markup_input" class="form-control" rows="5" placeholder="Enter markup XML here... (Press Ctrl+Enter or Cmd+Enter to send)"></textarea>
     </div>
     <div class="mb-3">
+      <button type="submit" class="btn btn-primary">Send</button>
       <button title="Stop Moxie's current speech" id="interrupt_button" type="button" class="btn btn-secondary">Interrupt</button>
     </div>
   </form>
@@ -66,26 +80,34 @@
     });
   }
 
-  function puppet_speak(speech, mood, intensity) {
+  function puppet_speak(speech, mood, intensity, markup) {
+    var postData = {
+      'command': "speak",
+      'speech': speech,
+      'mood': mood,
+      'intensity': intensity
+    };
+    
+    if (markup) {
+      postData['markup'] = markup;
+    }
+    
     $.ajax({
         type: 'POST',
         url: "{% url 'hive:puppet_api' object.pk %}", 
-        data: {
-          'command': "speak",
-          'speech': speech,
-          'mood': mood,
-          'intensity': intensity
-        },
+        data: postData,
         dataType: 'json'
       })
       .done(function(data, textStatus, jqXHR) {
-        add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'Moxie (' + mood + ')', speech)
+        var displayText = markup ? markup : speech;
+        add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'Moxie (' + mood + ')', displayText)
       })
       .fail(function(jqXHR, textStatus, errorThrown) {
         console.log("Failed speech: " + errorThrown);
       })
       .always(function() {
         $('#user_input').val('');
+        $('#markup_input').val('');
       });
   }
 
@@ -155,12 +177,56 @@
   }
 
   $(document).ready(function() {
+    // Toggle between text and markup input
+    $('#use_markup').change(function() {
+      if ($(this).is(':checked')) {
+        $('#text_input_div').hide();
+        $('#markup_input_div').show();
+      } else {
+        $('#text_input_div').show();
+        $('#markup_input_div').hide();
+      }
+    });
+
     $('#chat_form').submit(function(e) {
       e.preventDefault(); // Prevent form submission
-      puppet_speak($('#user_input').val(), $('#mood').val(), $('#intensity').val());
-      });
+      
+      var useMarkup = $('#use_markup').is(':checked');
+      var speech = $('#user_input').val().trim();
+      var markup = $('#markup_input').val().trim();
+      
+      if (useMarkup) {
+        if (!markup) {
+          alert('Please enter some markup to send.');
+          return;
+        }
+        puppet_speak('', $('#mood').val(), $('#intensity').val(), markup);
+      } else {
+        if (!speech) {
+          alert('Please enter some text to send.');
+          return;
+        }
+        puppet_speak(speech, $('#mood').val(), $('#intensity').val());
+      }
+    });
 
     $("#interrupt_button").on("click", function() { puppet_interrupt(); });
+
+    // Allow Enter key to submit form in text input
+    $('#user_input').keypress(function(e) {
+      if (e.which == 13) { // Enter key
+        $('#chat_form').submit();
+        return false;
+      }
+    });
+
+    // Allow Ctrl+Enter or Cmd+Enter to submit form in markup textarea
+    $('#markup_input').keypress(function(e) {
+      if (e.which == 13 && (e.ctrlKey || e.metaKey)) { // Ctrl+Enter or Cmd+Enter
+        $('#chat_form').submit();
+        return false;
+      }
+    });
 
     refresh_view();
   });

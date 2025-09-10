@@ -340,6 +340,11 @@ class MoxieServer:
         markup = self._remote_chat.make_markup(speech, (mood, intensity))
         tmsg = { "action": "PLAY_OUTPUT", "output": { "text": speech, "markup": markup } }
         self.send_telehealth(device_id, tmsg)
+    
+    # Send Telehealth - PLAY message to Moxie with custom markup
+    def send_telehealth_markup(self, device_id, markup:str, speech:str = ""):
+        tmsg = { "action": "PLAY_OUTPUT", "output": { "text": speech, "markup": markup } }
+        self.send_telehealth(device_id, tmsg)
 
     # Send Telehealth - INTERRUPT Moxie speaking
     def send_telehealth_interrupt(self, device_id):
