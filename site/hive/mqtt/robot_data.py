@@ -7,6 +7,7 @@ they disconnect, and provide various APIs to access data like schedule, config,
 and state.
 '''
 import json
+import os
 import logging
 import deepmerge
 from django.db import connections
@@ -44,7 +45,7 @@ DEFAULT_ROBOT_SETTINGS = {
 }
 
 # System default robot configuration, which may be overridden by the database values
-DEFAULT_ROBOT_CONFIG = { 
+DEFAULT_ROBOT_CONFIG = {
   "pairing_status": "paired",
   "audio_volume": "0.6",
   "screen_brightness": "1.0",
@@ -97,15 +98,15 @@ class RobotData:
             # set an empty record, so we don't try again
             self._robot_map[robot_id] = {}
         return needed
-    
+
     # Check if a device is online
     def device_online(self, robot_id):
         return robot_id in self._robot_map
-    
+
     # Get a list of online robots
     def connected_list(self):
         return list(self._robot_map.keys())
-    
+
     # Build a configuration record for a robot
     def build_config(self, device, hive_cfg):
         # Robot config is base config and settings merged with robot config and settings
@@ -119,7 +120,7 @@ class RobotData:
     # Load/create records for a Robot
     def init_from_db(self, robot_id):
         device, created = MoxieDevice.objects.get_or_create(device_id=robot_id)
-        curr_cfg = HiveConfiguration.objects.filter(name='default').first()
+        curr_cfg = HiveConfiguration.get_current()
         device.last_connect = timezone.now()
         if created:
             logger.info(f'Created new model for this device {robot_id}')
@@ -159,19 +160,19 @@ class RobotData:
         else:
             persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
             return persistent_data.data
-    
+
     # Get the active configuration for a device from the database objects
     def get_config_for_device(self, device):
-        curr_cfg = HiveConfiguration.objects.filter(name='default').first()
+        curr_cfg = HiveConfiguration.get_current()
         return self.build_config(device, curr_cfg)
-    
+
     # Update an active device config, and return if the device is connected and needs the config provided
     def config_update_live(self, device):
         if self.device_online(device.device_id):
             self._robot_map[device.device_id]["config"] = self.get_config_for_device(device)
             return True
         return False
-    
+
     # Get the cached config record for a robot
     def get_config(self, robot_id):
         robot_rec = self._robot_map.get(robot_id, {})
@@ -207,7 +208,7 @@ class RobotData:
     def get_puppet_state(self, robot_id):
         rec = self._robot_map.get(robot_id)
         return rec.get("puppet_state") if rec else None
-    
+
     # Update the device record with the state data
     def update_state_atomic(self, robot_id, state):
         device = MoxieDevice.objects.get(device_id=robot_id)

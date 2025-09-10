@@ -339,7 +339,7 @@ class MoxieServer:
         markup = self._remote_chat.make_markup(speech, (mood, intensity))
         tmsg = { "action": "PLAY_OUTPUT", "output": { "text": speech, "markup": markup } }
         self.send_telehealth(device_id, tmsg)
-    
+
     # Send Telehealth - PLAY message to Moxie with custom markup
     def send_telehealth_markup(self, device_id, markup:str, speech:str = ""):
         tmsg = { "action": "PLAY_OUTPUT", "output": { "text": speech, "markup": markup } }
@@ -423,14 +423,14 @@ class MoxieServer:
 
     # Reload records from the database
     def update_from_database(self):
-        hive_config = HiveConfiguration.objects.filter(name="default").first()
+        hive_config = HiveConfiguration.get_current()
         set_openai_key(hive_config.openai_api_key if hive_config else None)
         self._google_service_account = hive_config.google_api_key if hive_config else None
         self._remote_chat.update_from_database()
 
     # Get the endppint / moxie relocate QR code to move a Moxie to this service
     def get_endpoint_qr_data(self):
-        hiveconfig = HiveConfiguration.objects.filter(name="default").first()
+        hiveconfig = HiveConfiguration.get_current()
         scfg = ServiceConfiguration2()
         scfg.gcp_project = self._mqtt_project_id
         scfg.mqtt_host = hiveconfig.external_host if hiveconfig and hiveconfig.external_host else self._mqtt_endpoint

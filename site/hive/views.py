@@ -1,5 +1,3 @@
-import os
-
 from django.forms import model_to_dict
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -29,8 +27,9 @@ logger = logging.getLogger(__name__)
 
 # ROOT - Show setup if we have no config record, dashboard otherwise
 def root_view(request):
-    cfg = HiveConfiguration.objects.filter(name='default')
-    if cfg:
+    cfg = HiveConfiguration.get_current()
+    # Check if this is a newly created config (empty openai_api_key indicates setup needed)
+    if cfg and cfg.openai_api_key:
         return HttpResponseRedirect(reverse("hive:dashboard"))
     else:
         return HttpResponseRedirect(reverse("hive:setup"))
@@ -43,7 +42,7 @@ class SetupView(generic.TemplateView):
         context = super().get_context_data(**kwargs)
         User = get_user_model()
         context['needs_admin'] = not User.objects.filter(is_superuser=True).exists()
-        curr_cfg = HiveConfiguration.objects.filter(name='default').first()
+        curr_cfg = HiveConfiguration.get_current()
         if curr_cfg:
             context['object'] = curr_cfg
         return context
@@ -51,8 +50,7 @@ class SetupView(generic.TemplateView):
 # SETUP-POST - Save system config changes
 @require_http_methods(["POST"])
 def hive_configure(request):
-    name = os.getenv('HIVE_CONFIG_NAME', 'default')
-    cfg, created = HiveConfiguration.objects.get_or_create(name=name)
+    cfg = HiveConfiguration.get_current()
     openai = request.POST['apikey']
     if openai:
         cfg.openai_api_key = openai

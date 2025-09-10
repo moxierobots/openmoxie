@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from django.db import models
 from django.core.validators import validate_comma_separated_integer_list
@@ -20,15 +21,15 @@ class SinglePromptChat(models.Model):
     temperature = models.FloatField(default=0.5)
     code = models.TextField(null=True, blank=True) # Python code for filter methods
     source_version = models.IntegerField(default=1)
-    
+
     def __str__(self):
         return self.name
-    
+
 class MoxieSchedule(models.Model):
     name = models.CharField(max_length=200)
     schedule = models.JSONField()
     source_version = models.IntegerField(default=1)
-    
+
     def __str__(self):
         return self.name
 
@@ -74,8 +75,20 @@ class HiveConfiguration(models.Model):
     common_config = models.JSONField(null=True, blank=True)
     common_settings = models.JSONField(null=True, blank=True)
 
+    @classmethod
+    def get_current(cls):
+        """Get or create the current hive configuration based on HIVE_CONFIG_NAME environment variable."""
+        name = os.getenv('HIVE_CONFIG_NAME', 'default')
+        config, created = cls.objects.get_or_create(name=name)
+        return config
+
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_current_name(cls):
+        """Get the current configuration name from environment variable."""
+        return os.getenv('HIVE_CONFIG_NAME', 'default')
 
 class MentorBehavior(models.Model):
     device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE)
@@ -124,10 +137,10 @@ class GlobalResponse(models.Model):
             raise ValidationError({'module_id': 'Module ID is required for LAUNCH actions'})
         elif self.action != GlobalAction.METHOD.value and not self.response_text:
             raise ValidationError({'response_text': 'Response Text is required for actions except METHOD'})
-        
+
     def __str__(self):
         return self.name
-    
+
 class PersistentData(models.Model):
     device = models.OneToOneField(MoxieDevice, on_delete=models.CASCADE)
     data = models.JSONField()
