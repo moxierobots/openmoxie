@@ -1,3 +1,5 @@
+import os
+
 from django.forms import model_to_dict
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -49,7 +51,8 @@ class SetupView(generic.TemplateView):
 # SETUP-POST - Save system config changes
 @require_http_methods(["POST"])
 def hive_configure(request):
-    cfg, created = HiveConfiguration.objects.get_or_create(name='default')
+    name = os.getenv('HIVE_CONFIG_NAME', 'default')
+    cfg, created = HiveConfiguration.objects.get_or_create(name=name)
     openai = request.POST['apikey']
     if openai:
         cfg.openai_api_key = openai
