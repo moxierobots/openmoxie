@@ -15,10 +15,11 @@ from ..models import SinglePromptChat
 from ..automarkup import process as automarkup_process
 from ..automarkup import initialize_rules as automarkup_initialize_rules
 import logging
-from datetime import datetime
+import time
 from .global_responses import GlobalResponses
 from .conversations import ChatSession, SinglePromptDBChatSession
 from .volley import Volley
+from .protos.embodied.unity.cloudtts_pb2 import CloudTTSRequest
 
 # Turn on to enable global commands in the cloud
 _ENABLE_GLOBAL_COMMANDS = True
@@ -51,7 +52,7 @@ class RemoteChat:
     # Gets the remote module info record to share remote modules with Moxie
     def get_modules_info(self):
         return self._modules_info
-    
+
     # Update database backed records.  Query to get all the module/content IDs and update the modules schema and register the modules
     def update_from_database(self):
         new_modules = {}
@@ -77,16 +78,16 @@ class RemoteChat:
         self._modules_info["modules"] = mlist
         self._modules = new_modules
         self._global_responses.update_from_database()
-    
+
     # Handle GLOBAL patterns, available inside (almost) any module
     def check_global(self, volley):
         return self._global_responses.check_global(volley) if _ENABLE_GLOBAL_COMMANDS else None
-        
+
     def on_chat_complete(self, device_id, id, session:ChatSession):
         logger.info(f'Chat Session Complete: {id} {session.has_complete_hook()}')
         if session.has_complete_hook():
             # make a data-only Volley for the completion hook
-            volley = Volley({}, device_id=device_id, data_only=True, robot_data=self._server.robot_data().get_volley_data(device_id), local_data=session.local_data)
+            volley = Volley({}, device_id=device_id, robot_data=self._server.robot_data().get_volley_data(device_id), local_data=session.local_data, data_only=True)
             self._worker_queue.submit(session.complete_hook, volley)
 
     # Get the current or a new session for this device for this module/content ID pair
@@ -94,7 +95,7 @@ class RemoteChat:
         if device_id in self._device_sessions:
             return self._device_sessions[device_id]['session'].local_data
         return None
-            
+
     # Get the current or a new session for this device for this module/content ID pair
     def get_session(self, device_id, id, maker) -> ChatSession:
         # each device has a single session only for now
@@ -125,7 +126,7 @@ class RemoteChat:
                 return volley.debug_response_string()
         return None
 
-    # Markup text      
+    # Markup text
     def make_markup(self, text, mood_and_intensity = None):
         return automarkup_process(text, self._automarkup_rules, mood_and_intensity=mood_and_intensity)
 
@@ -139,8 +140,13 @@ class RemoteChat:
 
         if _LOG_ALL_RCR:
             logger.info(f"RemoteChatResponse\n{volley.response}")
+
+        # Send RemoteChatResponse to device
         self._server.send_command_to_bot_json(device_id, 'remote_chat', volley.response)
-    
+
+        # Check if CloudTTS is enabled and send parallel CloudTTSRequest
+        self._send_cloudtts_if_enabled(device_id, volley)
+
     # Produce / execute a global response
     def global_response(self, device_id, functor):
         resp = functor()
@@ -148,14 +154,20 @@ class RemoteChat:
         if output.get('text') and not output.get('markup'):
             # Run automarkup on any text-only responses
             output['markup'] = self.make_markup(output['text'])
+
+        # Send RemoteChatResponse to device
         self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
-        pass
+
+        # Check if CloudTTS is enabled and send parallel CloudTTSRequest for global responses
+        # Create a mock volley for global responses to reuse CloudTTS logic
+        mock_volley = type('MockVolley', (), {'response': resp, 'config': self._server.robot_data().get_config(device_id)})()
+        self._send_cloudtts_if_enabled(device_id, mock_volley)
 
     def log_notify(self, rcr):
         moxie_speech = rcr.get('speech')
         for el in rcr.get('extra_lines', []):
             if el.get('context_type') == 'input':
-                logger.info(f"-- USER: {el.get('text')}")    
+                logger.info(f"-- USER: {el.get('text')}")
         if moxie_speech:
             logger.info(f"-- MOXIE: {moxie_speech} [{rcr.get('module_id')}/{rcr.get('content_id')}]")
 
@@ -171,7 +183,7 @@ class RemoteChat:
         maker = self._modules.get(id)
         if maker:
             # THIS IS THE PATH FOR REMOTE CONTENT - MODULE/CONTENT HOSTED IN OPENMOXIE
-            logger.debug(f'Handling RCR:{cmd} for {id}') 
+            logger.debug(f'Handling RCR:{cmd} for {id}')
             sess = self.get_session(device_id, id, maker)
             if cmd == 'notify':
                 volley = Volley(rcr, device_id=device_id, robot_data=volley_data, local_data=sess.local_data, data_only=True)
@@ -193,9 +205,12 @@ class RemoteChat:
                     logger.debug(f'Ignoring request for other module: {id} SessionReset:{session_reset}')
                     # Rather than ignoring these, we return a generic FALLBACK response
                     fbline = "I'm sorry. Can  you repeat that?"
-                    volley.set_output(fbline, fbline, output_type='FALLBACK')
+                    volley.set_output(fbline, self.make_markup(fbline), output_type='FALLBACK')
                     self._server.send_command_to_bot_json(device_id, 'remote_chat', volley.response)
-    
+
+                    # Check if CloudTTS is enabled and send parallel CloudTTSRequest for fallback
+                    self._send_cloudtts_if_enabled(device_id, volley)
+
     def handled_global(self, device_id, volley):
         global_functor = self.check_global(volley)
         if global_functor:
@@ -203,3 +218,45 @@ class RemoteChat:
             self._worker_queue.submit(self.global_response, device_id, global_functor)
             return True
         return False
+
+    def _send_cloudtts_if_enabled(self, device_id, volley):
+        """
+        Send CloudTTSRequest if cloud_tts is enabled in robot configuration.
+        This allows Unity to receive both ChatResponse and CloudTTSResponse with matching event_ids.
+        """
+        try:
+            # Check if cloud_tts is enabled in robot configuration
+            config = getattr(volley, 'config', None) or self._server.robot_data().get_config(device_id)
+            cloud_tts_enabled = config.get('settings', {}).get('props', {}).get('cloud_tts', '0') == '1'
+
+            if not cloud_tts_enabled:
+                logger.debug(f"CloudTTS disabled for device {device_id}")
+                return
+
+            # Get response data
+            response = volley.response
+            event_id = response.get('event_id')
+            markup = response.get('output', {}).get('markup', '')
+
+            if not event_id or not markup:
+                logger.debug(f"Missing event_id or markup for CloudTTS request (device: {device_id})")
+                return
+
+            logger.info(f"Sending CloudTTSRequest for event_id: {event_id} (device: {device_id})")
+
+            # Create CloudTTSRequest message
+            cloudtts_request = CloudTTSRequest()
+            cloudtts_request.event_id = str(event_id)
+            cloudtts_request.markup = str(markup)
+            cloudtts_request.timestamp = int(time.time() * 1000)  # Using time.time() instead of now_ms()
+            cloudtts_request.chunk_num = 0
+            cloudtts_request.software_version = "openmoxie_v1"
+            cloudtts_request.module_name = "remote_chat"
+
+            # Send CloudTTSRequest via ZMQ topic
+            self._server.send_zmq_to_bot(device_id, cloudtts_request)
+
+            logger.debug(f"CloudTTSRequest sent for event_id: {event_id}")
+
+        except Exception as e:
+            logger.error(f"Error sending CloudTTSRequest for device {device_id}: {e}")
