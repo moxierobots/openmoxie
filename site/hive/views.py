@@ -22,8 +22,19 @@ from .mqtt.volley import Volley
 import json
 import uuid
 import logging
+from .automarkup import process as automarkup_process
+from .automarkup import initialize_rules as automarkup_initialize_rules
 
 logger = logging.getLogger(__name__)
+
+# Initialize automarkup rules for the public API
+_automarkup_rules = None
+
+def get_automarkup_rules():
+    global _automarkup_rules
+    if _automarkup_rules is None:
+        _automarkup_rules = automarkup_initialize_rules()
+    return _automarkup_rules
 
 # ROOT - Show setup if we have no config record, dashboard otherwise
 def root_view(request):
@@ -423,3 +434,73 @@ class MoxieDataView(generic.DetailView):
         context['active_config'] = json.dumps(get_instance().robot_data().get_config_for_device(self.object))
         context['persist_data'] = json.dumps(get_instance().robot_data().get_persist_for_device(self.object))
         return context
+
+
+# PUBLIC API - Text Markup Endpoint
+@csrf_exempt
+@require_http_methods(['POST'])
+def public_markup_api(request):
+    """
+    Public API endpoint for text markup processing.
+    Accepts JSON with 'text' field and optional 'mood' and 'intensity' fields.
+    Returns JSON with 'markup' field containing the processed markup.
+    """
+    try:
+        # Parse JSON request
+        data = json.loads(request.body.decode('utf-8'))
+        
+        # Validate required fields
+        if 'text' not in data:
+            return JsonResponse({
+                'error': 'Missing required field: text'
+            }, status=400)
+        
+        text = data['text']
+        if not text or not isinstance(text, str):
+            return JsonResponse({
+                'error': 'Text field must be a non-empty string'
+            }, status=400)
+        
+        # Extract optional mood and intensity parameters
+        mood = data.get('mood')
+        intensity = data.get('intensity')
+        mood_and_intensity = None
+        
+        if mood is not None:
+            if not isinstance(mood, str):
+                return JsonResponse({
+                    'error': 'Mood must be a string'
+                }, status=400)
+            
+            # Default intensity to 0.5 if mood is provided but intensity is not
+            if intensity is None:
+                intensity = 0.5
+            
+            if not isinstance(intensity, (int, float)) or intensity < 0 or intensity > 1:
+                return JsonResponse({
+                    'error': 'Intensity must be a number between 0 and 1'
+                }, status=400)
+            
+            mood_and_intensity = (mood, float(intensity))
+        
+        # Process the text through automarkup
+        rules = get_automarkup_rules()
+        markup_result = automarkup_process(text, rules, mood_and_intensity=mood_and_intensity)
+        
+        # Return the result
+        return JsonResponse({
+            'text': text,
+            'markup': markup_result,
+            'mood': mood,
+            'intensity': intensity
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON in request body'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in public markup API: {str(e)}")
+        return JsonResponse({
+            'error': 'Internal server error'
+        }, status=500)
