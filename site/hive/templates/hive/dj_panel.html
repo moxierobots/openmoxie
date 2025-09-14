@@ -139,11 +139,26 @@
         <button class="sfx-btn" data-sound="bee - buzz">Bee Buzz</button>
         <button class="sfx-btn" data-sound="snake - sssssss">Snake Hiss</button>
         <button class="sfx-btn" data-sound="sniff1">Sniff</button>
+        <button class="behavior-btn" data-behavior="Bht_raspberry">😜 Raspberry</button>
+        <button class="behavior-btn" data-behavior="Bht_raspberry_long">😜 Long Raspberry</button>
       </div>
       <div class="volume-control">
         <label>SFX Volume</label>
         <input type="range" id="sfx_volume" min="0" max="100" value="75" class="volume-slider">
         <span id="volume_display">75%</span>
+      </div>
+    </div>
+
+    <!-- Vocal Gestures -->
+    <div class="vocal-gestures">
+      <h3>Vocal Gestures</h3>
+      <div class="vocal-grid">
+        <button class="behavior-btn" data-behavior="Bht_Vg_gasp">😱 Gasp</button>
+        <button class="behavior-btn" data-behavior="Bht_Vg_cough">😷 Cough</button>
+        <button class="behavior-btn" data-behavior="Bht_Vg_gulp">😅 Gulp</button>
+        <button class="behavior-btn" data-behavior="Bht_Vg_Clear_Throat">😤 Clear Throat</button>
+        <button class="behavior-btn" data-behavior="Bht_Wing_Flap">🐦 Wing Flap</button>
+        <button class="behavior-btn" data-behavior="Bht_Vg_Psst">🤫 Psst</button>
       </div>
     </div>
 
@@ -181,11 +196,16 @@
         <button class="preset-btn" data-preset="party">🎉 Party Mode</button>
         <button class="preset-btn" data-preset="calm">😌 Calm Down</button>
         <button class="preset-btn" data-preset="energetic">⚡ Get Energetic</button>
+        <button class="preset-btn" data-preset="wake_up">🌅 Wake Up</button>
+        <button class="preset-btn" data-preset="birthday">🎂 Birthday</button>
+        <button class="preset-btn" data-preset="meditation">🧘 Meditation</button>
+        <button class="preset-btn" data-preset="breathing">🐋 Breathing</button>
       </div>
       <div class="macro-controls">
         <button id="record_macro" class="btn btn-warning">🔴 Record Macro</button>
         <button id="stop_macro" class="btn btn-secondary" disabled>⏹️ Stop Recording</button>
         <button id="play_macro" class="btn btn-success" disabled>▶️ Play Last Macro</button>
+        <a href="{% url 'hive:animation_tester' object.pk %}" class="btn btn-info" target="_blank">🧪 Animation Tester</a>
       </div>
     </div>
   </div>
@@ -366,11 +386,46 @@
   margin-bottom: 20px;
 }
 
+.vocal-gestures {
+  background: #2c2c2c;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.vocal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
 .macro-controls {
   display: flex;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.macro-controls .btn {
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.macro-controls .btn-info {
+  background: linear-gradient(145deg, #17a2b8, #138496);
+  border: none;
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.macro-controls .btn-info:hover {
+  background: linear-gradient(145deg, #138496, #0f6674);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 h3 {

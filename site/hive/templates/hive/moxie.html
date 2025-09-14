@@ -36,6 +36,19 @@
   </table>
   <button type="submit" class="btn btn-primary">Save</button>
 </form>
+
+<div class="mt-4">
+  <h4>Control & Test Tools</h4>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'hive:puppet' object.pk %}" class="btn btn-secondary">🎮 Puppet Control</a>
+    <a href="{% url 'hive:dj_panel' object.pk %}" class="btn btn-secondary">🎧 DJ Panel</a>
+    <a href="{% url 'hive:animation_tester' object.pk %}" class="btn btn-secondary">🧪 Animation Tester</a>
+    <a href="{% url 'hive:moxie_data' object.pk %}" class="btn btn-secondary">📊 Device Data</a>
+    <a href="{% url 'hive:moxie_missions' object.pk %}" class="btn btn-secondary">📋 Missions</a>
+    <a href="{% url 'hive:face' object.pk %}" class="btn btn-secondary">😊 Face Config</a>
+  </div>
+</div>
+
 </div>
 </div>
 {% endblock %}

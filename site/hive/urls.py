@@ -31,4 +31,9 @@ urlpatterns = [
     path("export_data/", views.export_data, name="export_data"),
     path("import_review/", views.upload_import_data, name="import_review"),
     path("import_data/", views.import_data, name="import_data"),
+    path("animation_tester/<int:pk>", views.AnimationTesterView.as_view(), name="animation_tester"),
+    path("animation_api/<int:pk>", views.animation_tester_api, name="animation_api"),
+    path("animation_results/<int:pk>", views.animation_results_download, name="animation_results"),
+    path("upload_animation_csv/", views.upload_animation_csv, name="upload_animation_csv"),
+    path("clear_animation_csv/", views.clear_animation_csv, name="clear_animation_csv"),
 ]

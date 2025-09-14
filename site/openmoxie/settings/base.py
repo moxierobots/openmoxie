@@ -11,6 +11,17 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
+# Environment validation
+try:
+    from hive.env_validator import run_startup_validation
+    # Only run validation if not in migration or collectstatic
+    import sys
+    if 'migrate' not in sys.argv and 'makemigrations' not in sys.argv and 'collectstatic' not in sys.argv:
+        run_startup_validation()
+except ImportError:
+    # During initial setup, hive app might not be available yet
+    pass
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_STORE_DIR = BASE_DIR / 'work'
@@ -71,7 +82,7 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD', default='openmoxie'),
         'NAME': config('DB_NAME', default='openmoxie'),
         'ATOMIC_REQUESTS': False,
-        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=0, cast=int),
+        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=300, cast=int),
         'OPTIONS': {
             'connect_timeout': 10,
         }

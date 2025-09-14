@@ -30,14 +30,14 @@ cd site
 print_status "Starting OpenMoxie server setup..."
 
 # Ensure we're using the virtual environment from the build
-export PATH="venv/bin:$PATH"
+export PATH="/app/.venv/bin:$PATH"
 
 # Ensure site/work directory exists and has proper permissions
 if [ ! -d "work" ]; then
     print_status "Creating work directory..."
     mkdir -p work
 fi
-chmod -R 777 work
+chmod -R 755 work
 
 # Run database migrations
 print_status "Running database migrations..."
@@ -107,7 +107,7 @@ print_status "Health check available at http://0.0.0.0:8000/health"
 if [ ! -d "work/logs" ]; then
     print_status "Creating logs directory..."
     mkdir -p work/logs
-    chmod -R 777 work/logs
+    chmod -R 755 work/logs
 fi
 
 exec gunicorn \

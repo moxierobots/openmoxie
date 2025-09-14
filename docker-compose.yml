@@ -36,6 +36,13 @@ services:
     env_file: .env
     depends_on:
       - mqtt
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
   postgres:
     image: postgres:17-alpine
     ports:
@@ -46,6 +53,11 @@ services:
       POSTGRES_DB: openmoxie
     volumes:
       - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openmoxie -d openmoxie"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres:

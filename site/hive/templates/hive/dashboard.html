@@ -58,6 +58,29 @@
   </td></tr>
 </table>
 <br>
+<h2>Animation Testing</h2>
+<table class="table table-striped">
+  <tr><th>Upload File</th><td>
+    <form method="post" enctype="multipart/form-data" action="{% url 'hive:upload_animation_csv' %}">
+      {% csrf_token %}
+      <div class="form-group d-flex align-items-center gap-2">
+        <input title="Select Animation TSV file to Upload" type="file" id="animation_file" name="animation_file" accept=".tsv,.csv" class="form-control-file">
+        <button title="Upload animation TSV file for testing" type="submit" class="btn btn-primary btn-sm">🧪 Upload & Test</button>
+      </div>
+      <small class="form-text text-muted">Upload your Moxie Animation Database TSV (tab-separated) file to start testing animations</small>
+    </form>
+  </td></tr>
+  {% if session.animations_data %}
+  <tr><th>Current File</th><td>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-success">{{ session.animation_file_name }}</span>
+      <span class="text-muted">{{ session.animation_count }} animations</span>
+      <a href="{% url 'hive:clear_animation_csv' %}" class="btn btn-outline-secondary btn-sm">Clear File</a>
+    </div>
+  </td></tr>
+  {% endif %}
+</table>
+<br>
 <h2>Schedules</h2>
 <table class="table table-striped">
   <tr><th>Name</th></tr>

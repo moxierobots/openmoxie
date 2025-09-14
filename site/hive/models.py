@@ -39,9 +39,9 @@ class DevicePermit(Enum):
     ALLOWED = 3
 
 class MoxieDevice(models.Model):
-    device_id = models.CharField(max_length=200)
-    email = models.EmailField(null=True, blank=True)
-    permit = models.IntegerField(choices=[(tag.value, tag.name) for tag in DevicePermit],default=DevicePermit.UNKNOWN.value)
+    device_id = models.CharField(max_length=200, db_index=True, unique=True)
+    email = models.EmailField(null=True, blank=True, db_index=True)
+    permit = models.IntegerField(choices=[(tag.value, tag.name) for tag in DevicePermit],default=DevicePermit.UNKNOWN.value, db_index=True)
     schedule = models.ForeignKey(MoxieSchedule, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=200, null=True, blank=True)
     last_connect = models.DateTimeField(null=True, blank=True)
@@ -61,13 +61,19 @@ class MoxieDevice(models.Model):
 
 class MoxieLogs(models.Model):
     device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE)
-    timestamp = models.TimeField()
+    timestamp = models.TimeField(db_index=True)
     uid = models.IntegerField()
-    tag = models.CharField(max_length=80)
+    tag = models.CharField(max_length=80, db_index=True)
     message = models.TextField()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['device', 'timestamp'], name='logs_device_timestamp_idx'),
+            models.Index(fields=['device', 'tag'], name='logs_device_tag_idx'),
+        ]
 
 class HiveConfiguration(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True, db_index=True)
     openai_api_key = models.TextField(null=True, blank=True, default='')
     external_host = models.CharField(max_length=255, null=True, blank=True, default='')
     allow_unverified_bots = models.BooleanField(default=False)
@@ -117,10 +123,10 @@ class GlobalAction(Enum):
     METHOD = 4
 
 class GlobalResponse(models.Model):
-    name = models.TextField()      # common name
+    name = models.TextField(db_index=True)      # common name
     pattern = models.TextField()   # regex pattern to match speech
     entity_groups = models.CharField(max_length=255, validators=[validate_comma_separated_integer_list], null=True, blank=True)
-    action = models.IntegerField(choices=[(tag.value, tag.name) for tag in GlobalAction],default=GlobalAction.RESPONSE.value)
+    action = models.IntegerField(choices=[(tag.value, tag.name) for tag in GlobalAction],default=GlobalAction.RESPONSE.value, db_index=True)
     response_text = models.TextField(null=True, blank=True)  # plaintext response
     response_markup = models.TextField(null=True, blank=True)  # markup override response
     module_id = models.CharField(max_length=80, null=True, blank=True)  # for launches, module ID to target

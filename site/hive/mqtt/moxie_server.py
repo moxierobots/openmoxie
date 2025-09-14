@@ -163,7 +163,7 @@ class MoxieServer:
             else:
                 logger.debug(f"Rx UNK topic: {dec}")
         except Exception as e:
-            logging.exception("Error handling mqtt messsage:")
+            logger.exception("Error handling mqtt message")
 
 
     # Handle messages FROM mosquitto syslog topic, looking for connect/disconnects

@@ -5,7 +5,10 @@ import numpy as np
 import io
 import time
 import logging
-from gevent.threadpool import ThreadPoolExecutor
+try:
+    from gevent.threadpool import ThreadPoolExecutor
+except ImportError:
+    from concurrent.futures import ThreadPoolExecutor
 from .ai_factory import create_openai
 
 LOG_WAV=False
@@ -69,7 +72,7 @@ class STTSession:
             resp.end_timestamp = self._start_ts + int(max_end*1000)
             logger.info(f'STT-FINAL: {transcript.text}')
         except Exception as e:
-            logger.warning(f'Exception handling openAI request: {e}')
+            logger.exception('Exception handling openAI request')
             resp.error_code = 66
             resp.error_message = str(e)
 

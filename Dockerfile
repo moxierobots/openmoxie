@@ -49,7 +49,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # Ensure permissions for site/work directory
-RUN mkdir -p /app/site/work && chmod -R 777 /app/site/work
+RUN mkdir -p /app/site/work && chmod -R 755 /app/site/work
 
 # Create static and media directories with proper permissions
 RUN mkdir -p /var/www/openmoxie/static /var/www/openmoxie/media && \

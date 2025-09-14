@@ -10,8 +10,8 @@ from .base import *
 DEBUG = True
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# In development, we can use a default key, but it should be overridden in production
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-v&n3hpdmu^t0r^62+hj64&c$z8q3o2g9qby^x02jl8y8g@jmb@')
+# Even in development, require a proper secret key from environment
+SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = ['*']
 

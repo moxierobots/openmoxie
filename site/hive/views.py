@@ -9,6 +9,7 @@ from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse,HttpResponseRedirect
 from django.conf import settings
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import qrcode
 from PIL import Image
 from io import BytesIO
@@ -19,9 +20,19 @@ from .data_import import update_import_status, import_content
 from .mqtt.moxie_server import get_instance
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
 from .mqtt.volley import Volley
+from .validators import (
+    validate_openai_api_key, validate_google_api_key, validate_hostname,
+    sanitize_input, validate_device_name, ValidationError as CustomValidationError
+)
+from .auth_utils import require_api_key, rate_limit
+from .behavior_config import (
+    get_behavior_markup, get_quick_action_behavior, get_preset_actions, get_sound_effect_markup
+)
 import json
 import uuid
 import logging
+import csv
+import io
 from .automarkup import process as automarkup_process
 from .automarkup import initialize_rules as automarkup_initialize_rules
 
@@ -62,15 +73,34 @@ class SetupView(generic.TemplateView):
 @require_http_methods(["POST"])
 def hive_configure(request):
     cfg = HiveConfiguration.get_current()
-    openai = request.POST['apikey']
-    if openai:
-        cfg.openai_api_key = openai
-    google = request.POST['googleapikey']
-    if google:
-        # Moxie likes compact json, so rewrite json input to be safe
-        cfg.google_api_key = json.dumps(json.loads(google))
-    cfg.external_host = request.POST['hostname']
-    cfg.allow_unverified_bots = request.POST.get('allowall') == "on"
+    
+    try:
+        # Validate and sanitize OpenAI API key
+        openai = sanitize_input(request.POST.get('apikey', ''), max_length=100)
+        if openai:
+            validate_openai_api_key(openai)
+            cfg.openai_api_key = openai
+        
+        # Validate and process Google API key
+        google = sanitize_input(request.POST.get('googleapikey', ''), max_length=10000)
+        if google:
+            parsed_google = validate_google_api_key(google)
+            # Moxie likes compact json, so rewrite json input to be safe
+            cfg.google_api_key = json.dumps(parsed_google, separators=(',', ':'))
+        
+        # Validate hostname
+        hostname = sanitize_input(request.POST.get('hostname', ''), max_length=255)
+        validate_hostname(hostname)
+        cfg.external_host = hostname
+        
+        cfg.allow_unverified_bots = request.POST.get('allowall') == "on"
+        
+    except CustomValidationError as e:
+        logger.error(f"Validation error in hive configuration: {str(e)}")
+        return redirect('hive:setup', alert_message=f'Configuration error: {str(e)}')
+    except Exception as e:
+        logger.error(f"Unexpected error in hive configuration: {str(e)}")
+        return redirect('hive:setup', alert_message='An unexpected error occurred. Please check your input.')
     # Bootstrap any default data if not present
     if not cfg.common_config:
         cfg.common_config = DEFAULT_ROBOT_CONFIG
@@ -103,10 +133,34 @@ class DashboardView(generic.TemplateView):
         alert_message = kwargs.get('alert_message', None)
         if alert_message:
             context['alert'] = alert_message
-        context['recent_devices'] = MoxieDevice.objects.all()
-        context['conversations'] = SinglePromptChat.objects.all()
-        context['schedules'] = MoxieSchedule.objects.all()
+        
+        # Paginate devices
+        devices_list = MoxieDevice.objects.select_related('schedule').order_by('-last_connect')
+        devices_paginator = Paginator(devices_list, 10)  # 10 devices per page
+        devices_page = self.request.GET.get('devices_page', 1)
+        
+        try:
+            context['recent_devices'] = devices_paginator.page(devices_page)
+        except PageNotAnInteger:
+            context['recent_devices'] = devices_paginator.page(1)
+        except EmptyPage:
+            context['recent_devices'] = devices_paginator.page(devices_paginator.num_pages)
+        
+        # Paginate conversations
+        conversations_list = SinglePromptChat.objects.order_by('name')
+        conv_paginator = Paginator(conversations_list, 5)  # 5 conversations per page
+        conv_page = self.request.GET.get('conv_page', 1)
+        
+        try:
+            context['conversations'] = conv_paginator.page(conv_page)
+        except PageNotAnInteger:
+            context['conversations'] = conv_paginator.page(1)
+        except EmptyPage:
+            context['conversations'] = conv_paginator.page(conv_paginator.num_pages)
+        
+        context['schedules'] = MoxieSchedule.objects.all()  # Keep schedules unpaginated for now
         context['live'] = get_instance().robot_data().connected_list()
+        
         return context
 
 # INTERACT - Chat with a remote conversation
@@ -121,7 +175,6 @@ class InteractionView(generic.DetailView):
 
 # INTERACT-POST - Handle user input during interact
 @require_http_methods(["POST"])
-@csrf_exempt
 def interact_update(request):
     speech = request.POST['speech']
     token = request.POST['token']
@@ -186,25 +239,76 @@ class MoxieView(generic.DetailView):
 def moxie_edit(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
-        # changes to base model
-        device.name = request.POST["moxie_name"]
-        device.schedule = MoxieSchedule.objects.get(pk=request.POST["schedule"])
-        # changes to json field inside config
-        if device.robot_config == None:
-           # robot_config optional, create a new one to hold these
-           device.robot_config = {}
-        device.robot_config["screen_brightness"] = float(request.POST["screen_brightness"])
-        device.robot_config["audio_volume"] = float(request.POST["audio_volume"])
-        if "child_pii" in device.robot_config:
-            device.robot_config["child_pii"]["nickname"] = request.POST["nickname"]
+        
+        # Validate and sanitize inputs
+        moxie_name = sanitize_input(request.POST.get("moxie_name", ""), max_length=200)
+        validate_device_name(moxie_name)
+        
+        # Validate numeric inputs
+        try:
+            screen_brightness = float(request.POST.get("screen_brightness", 0.5))
+            if not (0.0 <= screen_brightness <= 1.0):
+                raise ValueError("Screen brightness must be between 0.0 and 1.0")
+                
+            audio_volume = float(request.POST.get("audio_volume", 0.5))
+            if not (0.0 <= audio_volume <= 1.0):
+                raise ValueError("Audio volume must be between 0.0 and 1.0")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid numeric value in moxie_edit: {str(e)}")
+            return redirect('hive:dashboard_alert', alert_message=f'Invalid input: {str(e)}')
+        
+        # Validate schedule
+        schedule_pk = request.POST.get("schedule")
+        if schedule_pk:
+            try:
+                schedule = MoxieSchedule.objects.get(pk=int(schedule_pk))
+            except (MoxieSchedule.DoesNotExist, ValueError):
+                logger.warning(f"Invalid schedule ID: {schedule_pk}")
+                return redirect('hive:dashboard_alert', alert_message='Invalid schedule selected')
         else:
-            device.robot_config["child_pii"] = { "nickname": request.POST["nickname"] }
+            schedule = None
+        
+        # Validate nickname
+        nickname = sanitize_input(request.POST.get("nickname", ""), max_length=50)
+        
+        # Validate pairing status
+        pairing_status = request.POST.get("pairing_status", "paired")
+        if pairing_status not in ["paired", "unpairing"]:
+            pairing_status = "paired"
+        
+        # Apply changes to base model
+        device.name = moxie_name
+        device.schedule = schedule
+        
+        # Apply changes to json field inside config
+        if device.robot_config is None:
+            # robot_config optional, create a new one to hold these
+            device.robot_config = {}
+        
+        device.robot_config["screen_brightness"] = screen_brightness
+        device.robot_config["audio_volume"] = audio_volume
+        
+        if "child_pii" in device.robot_config:
+            device.robot_config["child_pii"]["nickname"] = nickname
+        else:
+            device.robot_config["child_pii"] = {"nickname": nickname}
+        
         # pairing/unpairing
-        device.robot_config["pairing_status"] = request.POST["pairing_status"]
+        device.robot_config["pairing_status"] = pairing_status
+        
         device.save()
         get_instance().handle_config_updated(device)
-    except MoxieDevice.DoesNotExist as e:
-        logger.warning("Moxie update for unfound pk {pk}")
+        
+    except CustomValidationError as e:
+        logger.warning(f"Validation error in moxie_edit for pk {pk}: {str(e)}")
+        return redirect('hive:dashboard_alert', alert_message=f'Validation error: {str(e)}')
+    except MoxieDevice.DoesNotExist:
+        logger.warning(f"Moxie update for unfound pk {pk}")
+        return redirect('hive:dashboard_alert', alert_message='Device not found')
+    except Exception as e:
+        logger.error(f"Unexpected error in moxie_edit for pk {pk}: {str(e)}")
+        return redirect('hive:dashboard_alert', alert_message='An error occurred while updating the device')
+    
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
 # MOXIE - Edit Moxie Face Customizations
@@ -255,7 +359,7 @@ class MoxiePuppetView(generic.DetailView):
     model = MoxieDevice
 
 # PUPPET API - Handle AJAX calls from puppet view
-@csrf_exempt
+# Note: This uses Django's default CSRF protection for session-based requests
 def puppet_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
@@ -437,7 +541,8 @@ class MoxieDataView(generic.DetailView):
 
 
 # PUBLIC API - Text Markup Endpoint
-@csrf_exempt
+@require_api_key
+@rate_limit(max_requests=30, window_seconds=60)
 @require_http_methods(['POST'])
 def public_markup_api(request):
     """
@@ -511,7 +616,7 @@ class MoxieDJPanelView(generic.DetailView):
     model = MoxieDevice
 
 # DJ PANEL API - Handle AJAX calls from DJ panel
-@csrf_exempt
+# Note: This uses Django's default CSRF protection for session-based requests
 def dj_panel_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
@@ -577,93 +682,23 @@ def dj_panel_api(request, pk):
 # DJ Panel Helper Functions
 def dj_handle_quick_action(device_id, action):
     """Handle quick action buttons like celebrate, dance, laugh, etc."""
-    action_map = {
-        'celebrate': 'Bht_Spin_360',
-        'dance': 'Bht_Circle_motion', 
-        'laugh': 'Bht_Vg_Laugh_Belly',
-        'wave': 'Bht_Wait_Hug',
-        'point': 'Bht_Photo_pose_Curious',
-        'think': 'Bht_Vg_Hmm_Confused_Sustained',
-        'surprise': 'Bht_Startled',
-        'bow': 'Bht_Turn_Away',
-        'snore': 'Bht_Vg_Snore_Heavy'
-    }
-    
-    behavior = action_map.get(action, 'Gesture_None')
+    behavior = get_quick_action_behavior(action)
     # Use the detailed behavior handler which has full markup commands
     dj_handle_behavior(device_id, behavior)
 
 def dj_handle_behavior(device_id, behavior_name):
     """Handle direct behavior tree execution with detailed markup"""
-    # Enhanced behavior mapping with full markup commands
-    behavior_commands = {
-        'Bht_Vg_Laugh_Belly': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Belly+,   +Track+:++ }"/>',
-        'Bht_Vg_Laugh_Big': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Big+,   +Track+:++ }"/>',
-        'Bht_Vg_Laugh_Big_Fourcount': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Big_Fourcount+,   +Track+:++ }"/>',
-        'Bht_Vg_Laugh_Mischief': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Mischief+,   +Track+:++ }"/>',
-        'Bht_Vg_Laugh_Nervous': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Nervous+,   +Track+:++ }"/>',
-        'Bht_Vg_Snore_Light': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Light+,   +Track+:++ }"/>',
-        'Bht_Vg_Snore_Heavy': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Heavy+,   +Track+:++ }"/>',
-        'Bht_Vg_Shiver_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Shiver_Sustained+,   +Track+:++ }"/>',
-        'Bht_Vg_Ooo_Cringe': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Ooo_Cringe+,   +Track+:++ }"/>',
-        'Bht_Vg_Oh_Eureka': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Oh_Eureka+,   +Track+:++ }"/>',
-        'Bht_Vg_Hmm_Confused_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Hmm_Confused_Sustained+,   +Track+:++ }"/>',
-        'Bht_Vg_Clear_Throat': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>',
-        'Bht_Vg_Gasp': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Gasp+,   +Track+:++ }"/>',
-        'Bht_Vg_Gulp': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Gulp+,   +Track+:++ }"/>',
-        'Bht_Vg_Grunt_In_Transit_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Grunt_In_Transit_Sustained+,   +Track+:++ }"/>',
-        'Bht_Vg_Nnn_Disagree': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Nnn_Disagree+,   +Track+:++ }"/>',
-        'Bht_Vg_Ooo_Urgent': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Ooo_Urgent+,   +Track+:++ }"/>',
-        'Bht_Vg_Psst': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Psst+,   +Track+:++ }"/>',
-        'Bht_Ice_Cream': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Ice_Cream+,   +Track+:++ }"/>',
-        'Bht_Spin_360': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Spin_360+,   +Track+:++ }"/>',
-        'Bht_Photo_pose_Curious': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Photo_pose_Curious+,   +Track+:++ }"/>',
-        'Bht_suckThroughTeeth': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_suckThroughTeeth+,   +Track+:++ }"/>',
-        'Bht_sigh_relief': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_sigh_relief+,   +Track+:++ }"/>',
-        'Bht_Turn_Away': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Away+,   +Track+:++ }"/>',
-        'Bht_Turn_Back': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Back+,   +Track+:++ }"/>',
-        'Bht_Startled': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Startled+,   +Track+:++ }"/>',
-        'Bht_Vision_Check': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vision_Check+,   +Track+:++ }"/>',
-        'Bht_yawn_big': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_yawn_big+,   +Track+:++ }"/>',
-        'Bht_Circle_motion': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Circle_motion+,   +Track+:++ }"/>',
-        'Bht_Wait_Hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
-    }
-    
-    # Use the detailed markup command if available, otherwise fall back to simple command
-    markup = behavior_commands.get(behavior_name, f'<mark name="cmd:behaviour-tree,data:{{+behaviour+:+{behavior_name}+}}"/>')
+    markup = get_behavior_markup(behavior_name)
     get_instance().send_telehealth_markup(device_id, markup)
 
 def dj_handle_sound_effect(device_id, sound_name, volume):
     """Handle sound effect playback"""
-    markup = f'<mark name="cmd:playaudio,data:{{+SoundToPlay+:+{sound_name}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:{volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}}"/>'
+    markup = get_sound_effect_markup(sound_name, volume)
     get_instance().send_telehealth_markup(device_id, markup)
 
 def dj_handle_preset(device_id, preset_name):
     """Handle preset combinations of actions"""
-    presets = {
-        'greeting': [
-            ('speak', {'text': 'Hello there! How are you doing today?', 'mood': 'happy', 'intensity': 0.7}),
-            ('behavior', {'behavior_name': 'Bht_Wait_Hug'})
-        ],
-        'party': [
-            ('sound_effect', {'sound_name': 'sfxmm_incoming02', 'volume': 0.8}),
-            ('behavior', {'behavior_name': 'Bht_Vg_Laugh_Big'}),
-            ('behavior', {'behavior_name': 'Bht_Spin_360'}),
-            ('speak', {'text': 'Party time! Let\'s celebrate!', 'mood': 'excited', 'intensity': 0.9})
-        ],
-        'calm': [
-            ('behavior', {'behavior_name': 'Bht_sigh_relief'}),
-            ('speak', {'text': 'Let\'s take a deep breath and relax.', 'mood': 'neutral', 'intensity': 0.3}),
-            ('behavior', {'behavior_name': 'Bht_yawn_big'})
-        ],
-        'energetic': [
-            ('speak', {'text': 'Let\'s get energized! Are you ready?', 'mood': 'excited', 'intensity': 0.8}),
-            ('behavior', {'behavior_name': 'Bht_Vg_Oh_Eureka'}),
-            ('behavior', {'behavior_name': 'Bht_Circle_motion'})
-        ]
-    }
-    
-    preset = presets.get(preset_name, [])
+    preset = get_preset_actions(preset_name)
     for action_type, params in preset:
         if action_type == 'speak':
             get_instance().send_telehealth_speech(device_id, 
@@ -703,3 +738,283 @@ def dj_handle_play_macro(device_id, macro_actions):
         # Add delay between macro actions
         import time
         time.sleep(0.3)
+
+# ANIMATION TESTER - Load animations from CSV and provide testing interface
+class AnimationTesterView(generic.DetailView):
+    template_name = "hive/animation_tester.html"
+    model = MoxieDevice
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        animations = self.load_animations_from_session()
+        context['total_animations'] = len(animations)
+        context['has_uploaded_file'] = len(animations) > 0
+        return context
+    
+    def load_animations_from_session(self):
+        """Load animations from uploaded file in session"""
+        # Get animations from session (already parsed and stored)
+        animations = self.request.session.get('animations_data', [])
+        return animations
+
+# ANIMATION TESTER API - Handle AJAX calls from animation tester
+# Note: This uses Django's default CSRF protection for session-based requests
+def animation_tester_api(request, pk):
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        
+        if request.method == 'GET':
+            # Return status information
+            result = {
+                "online": get_instance().robot_data().device_online(device.device_id),
+                "device_name": device.name
+            }
+            return JsonResponse(result)
+            
+        elif request.method == 'POST':
+            cmd = request.POST['command']
+            
+            if cmd == "test_animation":
+                # Send animation to robot
+                animation_name = request.POST.get('animation_name')
+                markup = request.POST.get('markup', '')
+                
+                if markup:
+                    # Use provided markup
+                    get_instance().send_telehealth_markup(device.device_id, markup)
+                else:
+                    # Generate markup for behavior tree command
+                    generated_markup = f'<mark name="cmd:behaviour-tree,data:{{+transition+:0.3,+duration+:2.0,+repeat+:1,+layerBlendInTime+:0.4,+layerBlendOutTime+:0.4,+blocking+:false,+action+:0,+eventName+:+Gesture_None+,+category+:+None+,+behaviour+:+{animation_name}+,+Track+:++}}"/>'
+                    get_instance().send_telehealth_markup(device.device_id, generated_markup)
+                
+                logger.info(f"Sent animation {animation_name} to device {device.device_id}")
+                return JsonResponse({'result': 'Animation sent', 'animation': animation_name})
+                
+            elif cmd == "mark_result":
+                # Store test result in session
+                animation_id = request.POST.get('animation_id')
+                result = request.POST.get('result')  # 'yes' or 'no'
+                
+                # Initialize session data if needed
+                if 'animation_results' not in request.session:
+                    request.session['animation_results'] = {}
+                
+                request.session['animation_results'][animation_id] = result
+                request.session.modified = True
+                
+                logger.info(f"Marked animation {animation_id} as {result}")
+                return JsonResponse({'result': 'Result saved', 'animation_id': animation_id, 'test_result': result})
+                
+            elif cmd == "get_results":
+                # Return current test results
+                results = request.session.get('animation_results', {})
+                return JsonResponse({'results': results})
+                
+            elif cmd == "clear_results":
+                # Clear all test results
+                request.session['animation_results'] = {}
+                request.session.modified = True
+                return JsonResponse({'result': 'Results cleared'})
+                
+            elif cmd == "clear_single_result":
+                # Clear result for a single animation
+                animation_id = request.POST.get('animation_id')
+                if 'animation_results' in request.session and animation_id in request.session['animation_results']:
+                    del request.session['animation_results'][animation_id]
+                    request.session.modified = True
+                    logger.info(f"Cleared result for animation {animation_id}")
+                return JsonResponse({'result': 'Single result cleared', 'animation_id': animation_id})
+                
+            elif cmd == "get_animations":
+                # Return animations data safely
+                animations = request.session.get('animations_data', [])
+                return JsonResponse({'animations': animations})
+        
+        return JsonResponse({'result': True})
+        
+    except MoxieDevice.DoesNotExist:
+        logger.warning(f"Animation tester for unfound device pk {pk}")
+        return HttpResponseBadRequest()
+    except Exception as e:
+        logger.error(f"Error in animation tester API: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+# ANIMATION RESULTS DOWNLOAD - Export test results as CSV
+def animation_results_download(request, pk):
+    """Download animation test results as CSV"""
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        
+        # Load original animations from session
+        animations = request.session.get('animations_data', [])
+        
+        if not animations:
+            return HttpResponseBadRequest("No animation data found. Please upload a CSV file first.")
+        
+        # Get test results from session
+        results = request.session.get('animation_results', {})
+        
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="animation_test_results_{device.name}.csv"'
+        
+        writer = csv.writer(response)
+        # Write header with new 'Worked' column
+        writer.writerow(['File Name', 'Markup', 'Does it work?', 'Function', 'Notes/Observations', 'Video Recording', 'Test Result'])
+        
+        # Write animation data with test results
+        for animation in animations:
+            animation_id = str(animation['id'])
+            worked_result = results.get(animation_id, '')
+            
+            # Convert yes/no to more readable format
+            if worked_result == 'yes':
+                test_result = 'Working'
+            elif worked_result == 'no':
+                test_result = 'Not Working'
+            else:
+                test_result = 'Not Tested'
+            
+            writer.writerow([
+                animation['file_name'],
+                animation['markup'],
+                animation.get('does_it_work', ''),  # Original column data
+                animation['function'],
+                animation['notes'],
+                animation['video_recording'],
+                test_result
+            ])
+        
+        return response
+        
+    except MoxieDevice.DoesNotExist:
+        return HttpResponseBadRequest("Device not found")
+    except Exception as e:
+        logger.error(f"Error downloading animation results: {str(e)}")
+        return HttpResponseBadRequest(str(e))
+
+# ANIMATION CSV UPLOAD - Handle animation CSV file uploads
+@require_http_methods(["POST"])
+def upload_animation_csv(request):
+    """Handle animation CSV file upload"""
+    try:
+        if 'animation_file' not in request.FILES:
+            return redirect('hive:dashboard_alert', alert_message='No file uploaded.')
+        
+        animation_file = request.FILES['animation_file']
+        
+        # Validate file type
+        if not (csv_file.name.endswith('.csv') or csv_file.name.endswith('.tsv')):
+            return redirect('hive:dashboard_alert', alert_message='Please upload a CSV or TSV file.')
+        
+        # Read and parse CSV content with encoding detection
+        raw_content = csv_file.read()
+        
+        # Try different encodings with fallback
+        encodings = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252']
+        csv_content = None
+        
+        for encoding in encodings:
+            try:
+                csv_content = raw_content.decode(encoding)
+                logger.info(f"Successfully decoded file using {encoding} encoding")
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        if csv_content is None:
+            return redirect('hive:dashboard_alert', alert_message='Could not decode file. Please ensure it uses UTF-8 encoding.')
+        logger.info(f"Uploaded CSV file: {csv_file.name}, size: {len(csv_content)} chars")
+        logger.info(f"CSV content preview: {csv_content[:300]}...")
+        
+        animations = parse_animation_csv_content(csv_content)
+        
+        if not animations:
+            logger.warning(f"No animations parsed from file {animation_file.name}")
+            return redirect('hive:dashboard_alert', alert_message=f'No valid animations found in file. Check that it uses tab (TSV), comma (CSV), or pipe delimiters and has the correct headers: File Name, Markup, Does it work?, Function, Notes/Observations, Video Recording')
+        
+        # Store in session for use in animation tester (only store parsed data)
+        request.session['animation_file_name'] = animation_file.name
+        request.session['animation_count'] = len(animations)
+        request.session['animations_data'] = animations
+        request.session.modified = True
+        
+        logger.info(f"Uploaded animation CSV with {len(animations)} animations")
+        return redirect('hive:dashboard_alert', alert_message=f'Successfully uploaded {len(animations)} animations from {animation_file.name}')
+        
+    except Exception as e:
+        logger.error(f"Error uploading animation CSV: {str(e)}")
+        return redirect('hive:dashboard_alert', alert_message=f'Error processing CSV file: {str(e)}')
+
+# CLEAR ANIMATION CSV - Clear uploaded animation CSV from session
+def clear_animation_csv(request):
+    """Clear uploaded animation file from session"""
+    request.session.pop('animation_file_name', None)
+    request.session.pop('animation_count', None)
+    request.session.pop('animations_data', None)
+    request.session.pop('animation_results', None)
+    request.session.modified = True
+    
+    return redirect('hive:dashboard_alert', alert_message='Animation file cleared.')
+
+# HELPER FUNCTION - Parse animation CSV content
+def parse_animation_csv_content(csv_content):
+    """Parse CSV content and return list of animations"""
+    animations = []
+    
+    try:
+        # Use StringIO to treat the string as a file-like object
+        csv_file = io.StringIO(csv_content)
+        
+        # Try different delimiters: tab first (for TSV), then comma, then pipe
+        delimiters = [('\t', 'tab'), (',', 'comma'), ('|', 'pipe')]
+        reader = None
+        
+        for delimiter, name in delimiters:
+            csv_file.seek(0)
+            test_reader = csv.DictReader(csv_file, delimiter=delimiter)
+            fieldnames = test_reader.fieldnames
+            logger.info(f"Trying {name} delimiter, headers: {fieldnames}")
+            
+            if fieldnames and 'File Name' in fieldnames:
+                csv_file.seek(0)
+                reader = csv.DictReader(csv_file, delimiter=delimiter)
+                logger.info(f"Successfully using {name} delimiter")
+                break
+        
+        if not reader:
+            logger.error("Could not find suitable delimiter for CSV file")
+            return []
+        
+        animation_count = 0
+        for i, row in enumerate(reader):
+            # Get the file name and check if it exists
+            file_name = row.get('File Name', '').strip()
+            
+            # Skip empty rows or header-like rows
+            if not file_name or file_name == 'File Name':
+                continue
+                
+            animation_count += 1
+            animation = {
+                'id': animation_count,
+                'file_name': file_name,
+                'markup': row.get('Markup', '').strip(),
+                'function': row.get('Function', '').strip(),
+                'notes': row.get('Notes/Observations', '').strip(),
+                'video_recording': row.get('Video Recording', '').strip(),
+                'does_it_work': row.get('Does it work?', '').strip()
+            }
+            animations.append(animation)
+            
+            # Debug: log first few animations
+            if animation_count <= 3:
+                logger.info(f"Parsed animation {animation_count}: {file_name}")
+            
+    except Exception as e:
+        logger.error(f"Error parsing CSV content: {str(e)}")
+        logger.error(f"CSV content preview: {csv_content[:200]}...")
+        
+    logger.info(f"Total animations parsed: {len(animations)}")
+    return animations
+
