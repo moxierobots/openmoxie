@@ -11,10 +11,6 @@ services:
       - "18083:18083"  # Dashboard
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      - ./emqx/data:/opt/emqx/data
-      - ./emqx/log:/opt/emqx/log
-      - ./emqx/etc:/opt/emqx/etc
     environment:
       - EMQX_NODE__COOKIE=openmoxie_secure_cookie_2024
       - EMQX_LOG__CONSOLE__ENABLE=true
@@ -25,7 +21,7 @@ services:
       - EMQX_LISTENERS__WS__DEFAULT__BIND=0.0.0.0:8083
       - EMQX_LISTENERS__WS__DEFAULT__WEBSOCKET__MQTT_PATH=/mqtt
       - EMQX_DASHBOARD__LISTENERS__HTTP__BIND=18083
-      - EMQX_AUTHORIZATION__NO_MATCH=deny
+      - EMQX_AUTHORIZATION__NO_MATCH=allow
   server:
     build:
       context: ./

@@ -1,0 +1,679 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="moxheader">
+  <a href="{% url 'hive:dashboard' %}">
+    <img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}">
+  </a>
+  OpenMoxie DJ Panel<span class="moxversion">{{moxie_version}}</span>
+</div>
+
+<div class="dj-panel-container">
+  <div class="dj-panel">
+    <!-- Status Display -->
+    <div class="status-section">
+      <h3>{{object.name}} Status</h3>
+      <div class="status-indicators">
+        <div class="status-item">
+          <span class="status-label">Connection:</span>
+          <span class="badge text-bg-success" id="moxie_state">Online</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">DJ Mode:</span>
+          <span class="badge text-bg-success" id="dj_state">READY</span>
+        </div>
+        <button id="dj_button" type="button" class="btn btn-success">Start DJ Mode</button>
+      </div>
+    </div>
+
+    <!-- Quick Action Buttons -->
+    <div class="quick-actions">
+      <h3>Quick Actions</h3>
+      <div class="action-grid">
+        <button class="action-btn celebrate" data-action="celebrate">🎉 Celebrate</button>
+        <button class="action-btn dance" data-action="dance">💃 Dance</button>
+        <button class="action-btn laugh" data-action="laugh">😄 Belly Laugh</button>
+        <button class="action-btn wave" data-action="wave">👋 Wave</button>
+        <button class="action-btn point" data-action="point">👉 Point</button>
+        <button class="action-btn think" data-action="think">🤔 Think</button>
+        <button class="action-btn surprise" data-action="surprise">😲 Surprise</button>
+        <button class="action-btn bow" data-action="bow">🙇 Bow</button>
+        <button class="action-btn snore" data-action="snore">😴 Snore</button>
+      </div>
+    </div>
+
+    <!-- Emotion Control Panel -->
+    <div class="emotion-mixer">
+      <h3>Emotion Mixer</h3>
+      <div class="emotion-controls">
+        <div class="emotion-channel">
+          <label>Mood</label>
+          <select id="mood_selector" class="mood-selector">
+            <option value="neutral">Neutral</option>
+            <option value="happy">Happy</option>
+            <option value="excited">Excited</option>
+            <option value="curious">Curious</option>
+            <option value="silly">Silly</option>
+            <option value="shy">Shy</option>
+            <option value="concerned">Concerned</option>
+            <option value="confused">Confused</option>
+          </select>
+        </div>
+        <div class="emotion-channel">
+          <label>Intensity</label>
+          <div class="slider-container">
+            <input type="range" id="intensity_slider" min="0" max="100" value="50" class="emotion-slider">
+            <span id="intensity_display">50%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Behavior Control -->
+    <div class="behavior-control">
+      <h3>Behavior Control</h3>
+      <div class="behavior-grid">
+        <div class="behavior-section">
+          <h4>Laughs & Vocal</h4>
+          <div class="laugh-buttons">
+            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Belly">Belly Laugh</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Big">Big Laugh</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Big_Fourcount">Four-Count Laugh</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Mischief">Mischief Laugh</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Nervous">Nervous Laugh</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Gasp">Gasp</button>
+          </div>
+        </div>
+        <div class="behavior-section">
+          <h4>Expressions & Reactions</h4>
+          <div class="expression-buttons">
+            <button class="behavior-btn" data-behavior="Bht_Vg_Oh_Eureka">Eureka!</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Ooo_Cringe">Cringe</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Ooo_Urgent">Urgent</button>
+            <button class="behavior-btn" data-behavior="Bht_Startled">Startled</button>
+            <button class="behavior-btn" data-behavior="Bht_sigh_relief">Sigh Relief</button>
+            <button class="behavior-btn" data-behavior="Bht_yawn_big">Big Yawn</button>
+          </div>
+        </div>
+        <div class="behavior-section">
+          <h4>Movements & Poses</h4>
+          <div class="movement-buttons">
+            <button class="behavior-btn" data-behavior="Bht_Spin_360">360° Spin</button>
+            <button class="behavior-btn" data-behavior="Bht_Photo_pose_Curious">Curious Pose</button>
+            <button class="behavior-btn" data-behavior="Bht_Circle_motion">Circle Motion</button>
+            <button class="behavior-btn" data-behavior="Bht_Turn_Away">Turn Away</button>
+            <button class="behavior-btn" data-behavior="Bht_Turn_Back">Turn Back</button>
+            <button class="behavior-btn" data-behavior="Bht_Wait_Hug">Wait for Hug</button>
+          </div>
+        </div>
+        <div class="behavior-section">
+          <h4>Special Actions</h4>
+          <div class="special-buttons">
+            <button class="behavior-btn" data-behavior="Bht_Ice_Cream">Ice Cream</button>
+            <button class="behavior-btn" data-behavior="Bht_suckThroughTeeth">Suck Through Teeth</button>
+            <button class="behavior-btn" data-behavior="Bht_Vision_Check">Vision Check</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Clear_Throat">Clear Throat</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Gulp">Gulp</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Psst">Psst</button>
+          </div>
+        </div>
+        <div class="behavior-section">
+          <h4>Sleep & Rest</h4>
+          <div class="sleep-buttons">
+            <button class="behavior-btn" data-behavior="Bht_Vg_Snore_Light">Light Snore</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Snore_Heavy">Heavy Snore</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Shiver_Sustained">Shiver</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Hmm_Confused_Sustained">Confused Hmm</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Grunt_In_Transit_Sustained">Grunt</button>
+            <button class="behavior-btn" data-behavior="Bht_Vg_Nnn_Disagree">Disagree</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sound Effects Panel -->
+    <div class="sound-effects">
+      <h3>Sound Effects</h3>
+      <div class="sfx-grid">
+        <button class="sfx-btn" data-sound="sfxmm_incoming02">Incoming</button>
+        <button class="sfx-btn" data-sound="bee - buzz">Bee Buzz</button>
+        <button class="sfx-btn" data-sound="snake - sssssss">Snake Hiss</button>
+        <button class="sfx-btn" data-sound="sniff1">Sniff</button>
+      </div>
+      <div class="volume-control">
+        <label>SFX Volume</label>
+        <input type="range" id="sfx_volume" min="0" max="100" value="75" class="volume-slider">
+        <span id="volume_display">75%</span>
+      </div>
+    </div>
+
+    <!-- Speech Control -->
+    <div class="speech-control">
+      <h3>Speech Control</h3>
+      <div class="speech-options">
+        <div class="speech-mode">
+          <input type="radio" id="text_mode" name="speech_mode" value="text" checked>
+          <label for="text_mode">Text Mode</label>
+          <input type="radio" id="markup_mode" name="speech_mode" value="markup">
+          <label for="markup_mode">Markup Mode</label>
+        </div>
+        
+        <div class="text-input-section" id="text_input_section">
+          <textarea id="speech_text" placeholder="Enter what Moxie should say..." class="speech-input"></textarea>
+        </div>
+        
+        <div class="markup-input-section" id="markup_input_section" style="display: none;">
+          <textarea id="markup_text" placeholder="Enter markup XML..." class="markup-input"></textarea>
+        </div>
+        
+        <div class="speech-actions">
+          <button id="speak_button" class="btn btn-primary">🎤 Speak</button>
+          <button id="interrupt_button" class="btn btn-secondary">⏹️ Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preset Panel -->
+    <div class="preset-panel">
+      <h3>Presets & Macros</h3>
+      <div class="preset-buttons">
+        <button class="preset-btn" data-preset="greeting">👋 Greeting</button>
+        <button class="preset-btn" data-preset="party">🎉 Party Mode</button>
+        <button class="preset-btn" data-preset="calm">😌 Calm Down</button>
+        <button class="preset-btn" data-preset="energetic">⚡ Get Energetic</button>
+      </div>
+      <div class="macro-controls">
+        <button id="record_macro" class="btn btn-warning">🔴 Record Macro</button>
+        <button id="stop_macro" class="btn btn-secondary" disabled>⏹️ Stop Recording</button>
+        <button id="play_macro" class="btn btn-success" disabled>▶️ Play Last Macro</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.dj-panel-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+  min-height: 100vh;
+}
+
+.dj-panel {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  color: #ffffff;
+}
+
+.dj-panel > div {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3), -5px -5px 15px rgba(255,255,255,0.1);
+  border: 1px solid #333;
+}
+
+.status-section {
+  grid-column: 1 / -1;
+}
+
+.status-indicators {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-label {
+  font-weight: bold;
+  color: #ccc;
+}
+
+.action-grid, .behavior-grid, .sfx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.action-btn, .behavior-btn, .sfx-btn, .preset-btn {
+  padding: 12px 8px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.1);
+  text-align: center;
+}
+
+.action-btn:hover, .behavior-btn:hover, .sfx-btn:hover, .preset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.4), -3px -3px 12px rgba(255,255,255,0.15);
+}
+
+.action-btn:active, .behavior-btn:active, .sfx-btn:active, .preset-btn:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+}
+
+.celebrate { background: linear-gradient(145deg, #ff6b6b, #cc5555); }
+.dance { background: linear-gradient(145deg, #4ecdc4, #3ea39e); }
+.laugh { background: linear-gradient(145deg, #ffe66d, #ccb857); }
+.wave { background: linear-gradient(145deg, #95e1d3, #7ab5a8); }
+.point { background: linear-gradient(145deg, #a8e6cf, #86b89f); }
+.think { background: linear-gradient(145deg, #ffc3a0, #cc9c80); }
+.surprise { background: linear-gradient(145deg, #ff8b94, #cc6f76); }
+.bow { background: linear-gradient(145deg, #b4a7d6, #9086ab); }
+
+.emotion-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.emotion-channel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mood-selector {
+  padding: 10px;
+  border-radius: 8px;
+  background: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  font-size: 14px;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.emotion-slider, .volume-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #3a3a3a;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.emotion-slider::-webkit-slider-thumb, .volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ff6b6b, #cc5555);
+  cursor: pointer;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+.behavior-section h4 {
+  color: #ff6b6b;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.speech-control {
+  grid-column: 1 / -1;
+}
+
+.speech-mode {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.speech-input, .markup-input {
+  width: 100%;
+  height: 100px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  font-family: monospace;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.speech-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.preset-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.macro-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+h3 {
+  color: #ff6b6b;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 18px;
+}
+
+h4 {
+  color: #4ecdc4;
+  font-size: 14px;
+}
+
+@media (max-width: 1200px) {
+  .dj-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dj-panel {
+    grid-template-columns: 1fr;
+  }
+  
+  .status-indicators {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+</style>
+
+<script>
+let djEnabled = false;
+let isRecordingMacro = false;
+let currentMacro = [];
+
+// DJ Mode Control
+function setDJMode(enabled) {
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_api' object.pk %}",
+    data: {'command': enabled ? "enable" : "disable"},
+    dataType: 'json'
+  }).always(function() {
+    setTimeout(refreshDJStatus, 100);
+  });
+}
+
+// Refresh DJ panel status
+function refreshDJStatus() {
+  $.ajax({
+    type: 'GET',
+    url: "{% url 'hive:dj_api' object.pk %}",
+    dataType: "json"
+  }).done(function(data) {
+    // Update connection status
+    if (data["online"]) {
+      $("#moxie_state")
+        .removeClass("text-bg-danger")
+        .addClass("text-bg-success")
+        .text("Online");
+    } else {
+      $("#moxie_state")
+        .removeClass("text-bg-success")
+        .addClass("text-bg-danger")
+        .text("Offline");
+    }
+
+    // Update DJ mode status
+    if (data["dj_enabled"]) {
+      $("#dj_state")
+        .removeClass("text-bg-warning")
+        .addClass("text-bg-success")
+        .text("ACTIVE");
+      
+      $("#dj_button")
+        .removeClass("btn-success")
+        .addClass("btn-danger")
+        .text("Stop DJ Mode")
+        .off("click").on("click", function() { setDJMode(false); });
+        
+      djEnabled = true;
+    } else {
+      $("#dj_state")
+        .removeClass("text-bg-success")
+        .addClass("text-bg-warning")
+        .text("STANDBY");
+      
+      $("#dj_button")
+        .removeClass("btn-danger")
+        .addClass("btn-success")
+        .text("Start DJ Mode")
+        .off("click").on("click", function() { setDJMode(true); });
+        
+      djEnabled = false;
+    }
+  }).always(function() {
+    setTimeout(refreshDJStatus, 2000);
+  });
+}
+
+// Send DJ command
+function sendDJCommand(command, params = {}) {
+  console.log('Sending DJ command:', command, params);
+  
+  if (!djEnabled && command !== 'enable' && command !== 'disable') {
+    console.warn('DJ Mode not enabled, but allowing command:', command);
+    // Don't block commands, just warn - let the backend handle validation
+  }
+  
+  const data = { command: command, ...params };
+  console.log('Full data being sent:', data);
+  
+  if (isRecordingMacro) {
+    currentMacro.push(data);
+    console.log('Added to macro recording:', data);
+  }
+  
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_api' object.pk %}",
+    data: data,
+    dataType: 'json',
+    beforeSend: function() {
+      console.log('Sending AJAX request for command:', command);
+    },
+    success: function(response) {
+      console.log('DJ command success:', command, response);
+      if (response.error) {
+        console.error('Backend returned error:', response.error);
+        alert('Command failed: ' + response.error);
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('Failed to send DJ command:', command, status, error);
+      console.error('Response text:', xhr.responseText);
+      alert('Failed to send command: ' + error + ' (Status: ' + status + ')');
+    }
+  });
+}
+
+// Quick Actions - Use delegated event handling
+$(document).on('click', '.action-btn', function(e) {
+  e.preventDefault();
+  console.log('Quick action clicked:', this);
+  console.log('Element classes:', $(this).attr('class'));
+  const action = $(this).data('action');
+  console.log('Action data:', action);
+  
+  if (!action) {
+    console.error('No action data found on button:', this);
+    return;
+  }
+  
+  sendDJCommand('quick_action', { action: action });
+});
+
+// Behavior Controls - Use delegated event handling
+$(document).on('click', '.behavior-btn', function(e) {
+  e.preventDefault();
+  console.log('Behavior button clicked:', this);
+  console.log('Element classes:', $(this).attr('class'));
+  const behavior = $(this).data('behavior');
+  console.log('Behavior data:', behavior);
+  
+  if (!behavior) {
+    console.error('No behavior data found on button:', this);
+    return;
+  }
+  
+  sendDJCommand('behavior', { behavior_name: behavior });
+});
+
+// Sound Effects - Use delegated event handling
+$(document).on('click', '.sfx-btn', function(e) {
+  e.preventDefault();
+  console.log('Sound effect clicked:', this);
+  const sound = $(this).data('sound');
+  const volume = $('#sfx_volume').val() / 100;
+  console.log('Sound data:', sound, 'Volume:', volume);
+  
+  if (!sound) {
+    console.error('No sound data found on button:', this);
+    return;
+  }
+  
+  sendDJCommand('sound_effect', { sound_name: sound, volume: volume });
+});
+
+// Speech Control
+$('#speak_button').on('click', function() {
+  const isMarkup = $('input[name="speech_mode"]:checked').val() === 'markup';
+  const text = isMarkup ? '' : $('#speech_text').val().trim();
+  const markup = isMarkup ? $('#markup_text').val().trim() : '';
+  const mood = $('#mood_selector').val();
+  const intensity = $('#intensity_slider').val() / 100;
+  
+  if ((!text && !markup) || (isMarkup && !markup) || (!isMarkup && !text)) {
+    alert('Please enter some text or markup to speak!');
+    return;
+  }
+  
+  sendDJCommand('speak', {
+    text: text,
+    markup: markup,
+    mood: mood,
+    intensity: intensity
+  });
+});
+
+$('#interrupt_button').on('click', function() {
+  sendDJCommand('interrupt');
+});
+
+// Speech mode toggle
+$('input[name="speech_mode"]').on('change', function() {
+  const isMarkup = $(this).val() === 'markup';
+  if (isMarkup) {
+    $('#text_input_section').hide();
+    $('#markup_input_section').show();
+  } else {
+    $('#text_input_section').show();
+    $('#markup_input_section').hide();
+  }
+});
+
+// Intensity slider display
+$('#intensity_slider').on('input', function() {
+  $('#intensity_display').text($(this).val() + '%');
+});
+
+$('#sfx_volume').on('input', function() {
+  $('#volume_display').text($(this).val() + '%');
+});
+
+// Preset actions - Use delegated event handling
+$(document).on('click', '.preset-btn', function(e) {
+  e.preventDefault();
+  console.log('Preset button clicked:', this);
+  const preset = $(this).data('preset');
+  console.log('Preset data:', preset);
+  
+  if (!preset) {
+    console.error('No preset data found on button:', this);
+    return;
+  }
+  
+  sendDJCommand('preset', { preset_name: preset });
+});
+
+// Macro recording
+$('#record_macro').on('click', function() {
+  isRecordingMacro = true;
+  currentMacro = [];
+  $(this).prop('disabled', true);
+  $('#stop_macro').prop('disabled', false);
+  alert('Macro recording started! Perform actions to record them.');
+});
+
+$('#stop_macro').on('click', function() {
+  isRecordingMacro = false;
+  $(this).prop('disabled', true);
+  $('#record_macro').prop('disabled', false);
+  $('#play_macro').prop('disabled', false);
+  alert(`Macro recorded with ${currentMacro.length} actions!`);
+});
+
+$('#play_macro').on('click', function() {
+  if (currentMacro.length === 0) {
+    alert('No macro recorded!');
+    return;
+  }
+  
+  sendDJCommand('play_macro', { macro_actions: currentMacro });
+});
+
+// Initialize
+$(document).ready(function() {
+  console.log('DJ Panel initializing...');
+  console.log('Found action buttons:', $('.action-btn').length);
+  console.log('Found behavior buttons:', $('.behavior-btn').length);
+  console.log('Found sound effect buttons:', $('.sfx-btn').length);
+  console.log('Found preset buttons:', $('.preset-btn').length);
+  
+  // Test if jQuery is working
+  console.log('jQuery version:', $.fn.jquery);
+  
+  // Debug: List all buttons with their data attributes
+  $('.action-btn').each(function(i, btn) {
+    console.log('Action button', i, ':', $(btn).data('action'), $(btn).text());
+  });
+  
+  $('.behavior-btn').each(function(i, btn) {
+    console.log('Behavior button', i, ':', $(btn).data('behavior'), $(btn).text());
+  });
+  
+  // Test click detection on any button
+  $(document).on('click', 'button', function(e) {
+    console.log('Generic button click detected:', $(this).attr('class'), $(this).text());
+  });
+  
+  refreshDJStatus();
+});
+</script>
+{% endblock %}

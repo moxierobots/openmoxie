@@ -504,3 +504,202 @@ def public_markup_api(request):
         return JsonResponse({
             'error': 'Internal server error'
         }, status=500)
+
+# MOXIE - DJ Control Panel
+class MoxieDJPanelView(generic.DetailView):
+    template_name = "hive/dj_panel.html"
+    model = MoxieDevice
+
+# DJ PANEL API - Handle AJAX calls from DJ panel
+@csrf_exempt
+def dj_panel_api(request, pk):
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        if request.method == 'GET':
+            # Handle GET request - return status
+            result = {
+                "online": get_instance().robot_data().device_online(device.device_id),
+                "dj_state": get_instance().robot_data().get_puppet_state(device.device_id),
+                "dj_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False
+            }
+            return JsonResponse(result)
+        elif request.method == 'POST':
+            # Handle DJ command requests
+            if not device.robot_config:
+                device.robot_config = {}
+            
+            cmd = request.POST['command']
+            
+            if cmd == "enable":
+                device.robot_config["moxie_mode"] = "TELEHEALTH"
+                device.save()
+                get_instance().handle_config_updated(device)
+            elif cmd == "disable":
+                device.robot_config.pop("moxie_mode", None)
+                device.save()
+                get_instance().handle_config_updated(device)
+            elif cmd == "interrupt":
+                get_instance().send_telehealth_interrupt(device.device_id)
+            elif cmd == "speak":
+                text = request.POST.get('text', '')
+                markup = request.POST.get('markup', '')
+                if markup:
+                    get_instance().send_telehealth_markup(device.device_id, markup, text)
+                else:
+                    mood = request.POST.get('mood', 'neutral')
+                    intensity = float(request.POST.get('intensity', 0.5))
+                    get_instance().send_telehealth_speech(device.device_id, text, mood, intensity)
+            elif cmd == "quick_action":
+                action = request.POST.get('action')
+                dj_handle_quick_action(device.device_id, action)
+            elif cmd == "behavior":
+                behavior_name = request.POST.get('behavior_name')
+                dj_handle_behavior(device.device_id, behavior_name)
+            elif cmd == "sound_effect":
+                sound_name = request.POST.get('sound_name')
+                volume = float(request.POST.get('volume', 0.75))
+                dj_handle_sound_effect(device.device_id, sound_name, volume)
+            elif cmd == "preset":
+                preset_name = request.POST.get('preset_name')
+                dj_handle_preset(device.device_id, preset_name)
+            elif cmd == "play_macro":
+                macro_actions = json.loads(request.POST.get('macro_actions', '[]'))
+                dj_handle_play_macro(device.device_id, macro_actions)
+                
+        return JsonResponse({'result': True})
+    except MoxieDevice.DoesNotExist as e:
+        logger.warning(f"Moxie DJ panel for unfound pk {pk}")
+        return HttpResponseBadRequest()
+    except Exception as e:
+        logger.error(f"Error in DJ panel API: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+# DJ Panel Helper Functions
+def dj_handle_quick_action(device_id, action):
+    """Handle quick action buttons like celebrate, dance, laugh, etc."""
+    action_map = {
+        'celebrate': 'Bht_Spin_360',
+        'dance': 'Bht_Circle_motion', 
+        'laugh': 'Bht_Vg_Laugh_Belly',
+        'wave': 'Bht_Wait_Hug',
+        'point': 'Bht_Photo_pose_Curious',
+        'think': 'Bht_Vg_Hmm_Confused_Sustained',
+        'surprise': 'Bht_Startled',
+        'bow': 'Bht_Turn_Away',
+        'snore': 'Bht_Vg_Snore_Heavy'
+    }
+    
+    behavior = action_map.get(action, 'Gesture_None')
+    # Use the detailed behavior handler which has full markup commands
+    dj_handle_behavior(device_id, behavior)
+
+def dj_handle_behavior(device_id, behavior_name):
+    """Handle direct behavior tree execution with detailed markup"""
+    # Enhanced behavior mapping with full markup commands
+    behavior_commands = {
+        'Bht_Vg_Laugh_Belly': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Belly+,   +Track+:++ }"/>',
+        'Bht_Vg_Laugh_Big': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Big+,   +Track+:++ }"/>',
+        'Bht_Vg_Laugh_Big_Fourcount': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Big_Fourcount+,   +Track+:++ }"/>',
+        'Bht_Vg_Laugh_Mischief': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Mischief+,   +Track+:++ }"/>',
+        'Bht_Vg_Laugh_Nervous': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Nervous+,   +Track+:++ }"/>',
+        'Bht_Vg_Snore_Light': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Light+,   +Track+:++ }"/>',
+        'Bht_Vg_Snore_Heavy': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Heavy+,   +Track+:++ }"/>',
+        'Bht_Vg_Shiver_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Shiver_Sustained+,   +Track+:++ }"/>',
+        'Bht_Vg_Ooo_Cringe': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Ooo_Cringe+,   +Track+:++ }"/>',
+        'Bht_Vg_Oh_Eureka': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Oh_Eureka+,   +Track+:++ }"/>',
+        'Bht_Vg_Hmm_Confused_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Hmm_Confused_Sustained+,   +Track+:++ }"/>',
+        'Bht_Vg_Clear_Throat': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>',
+        'Bht_Vg_Gasp': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Gasp+,   +Track+:++ }"/>',
+        'Bht_Vg_Gulp': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Gulp+,   +Track+:++ }"/>',
+        'Bht_Vg_Grunt_In_Transit_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Grunt_In_Transit_Sustained+,   +Track+:++ }"/>',
+        'Bht_Vg_Nnn_Disagree': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Nnn_Disagree+,   +Track+:++ }"/>',
+        'Bht_Vg_Ooo_Urgent': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Ooo_Urgent+,   +Track+:++ }"/>',
+        'Bht_Vg_Psst': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Psst+,   +Track+:++ }"/>',
+        'Bht_Ice_Cream': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Ice_Cream+,   +Track+:++ }"/>',
+        'Bht_Spin_360': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Spin_360+,   +Track+:++ }"/>',
+        'Bht_Photo_pose_Curious': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Photo_pose_Curious+,   +Track+:++ }"/>',
+        'Bht_suckThroughTeeth': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_suckThroughTeeth+,   +Track+:++ }"/>',
+        'Bht_sigh_relief': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_sigh_relief+,   +Track+:++ }"/>',
+        'Bht_Turn_Away': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Away+,   +Track+:++ }"/>',
+        'Bht_Turn_Back': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Back+,   +Track+:++ }"/>',
+        'Bht_Startled': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Startled+,   +Track+:++ }"/>',
+        'Bht_Vision_Check': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vision_Check+,   +Track+:++ }"/>',
+        'Bht_yawn_big': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_yawn_big+,   +Track+:++ }"/>',
+        'Bht_Circle_motion': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Circle_motion+,   +Track+:++ }"/>',
+        'Bht_Wait_Hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
+    }
+    
+    # Use the detailed markup command if available, otherwise fall back to simple command
+    markup = behavior_commands.get(behavior_name, f'<mark name="cmd:behaviour-tree,data:{{+behaviour+:+{behavior_name}+}}"/>')
+    get_instance().send_telehealth_markup(device_id, markup)
+
+def dj_handle_sound_effect(device_id, sound_name, volume):
+    """Handle sound effect playback"""
+    markup = f'<mark name="cmd:playaudio,data:{{+SoundToPlay+:+{sound_name}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:{volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}}"/>'
+    get_instance().send_telehealth_markup(device_id, markup)
+
+def dj_handle_preset(device_id, preset_name):
+    """Handle preset combinations of actions"""
+    presets = {
+        'greeting': [
+            ('speak', {'text': 'Hello there! How are you doing today?', 'mood': 'happy', 'intensity': 0.7}),
+            ('behavior', {'behavior_name': 'Bht_Wait_Hug'})
+        ],
+        'party': [
+            ('sound_effect', {'sound_name': 'sfxmm_incoming02', 'volume': 0.8}),
+            ('behavior', {'behavior_name': 'Bht_Vg_Laugh_Big'}),
+            ('behavior', {'behavior_name': 'Bht_Spin_360'}),
+            ('speak', {'text': 'Party time! Let\'s celebrate!', 'mood': 'excited', 'intensity': 0.9})
+        ],
+        'calm': [
+            ('behavior', {'behavior_name': 'Bht_sigh_relief'}),
+            ('speak', {'text': 'Let\'s take a deep breath and relax.', 'mood': 'neutral', 'intensity': 0.3}),
+            ('behavior', {'behavior_name': 'Bht_yawn_big'})
+        ],
+        'energetic': [
+            ('speak', {'text': 'Let\'s get energized! Are you ready?', 'mood': 'excited', 'intensity': 0.8}),
+            ('behavior', {'behavior_name': 'Bht_Vg_Oh_Eureka'}),
+            ('behavior', {'behavior_name': 'Bht_Circle_motion'})
+        ]
+    }
+    
+    preset = presets.get(preset_name, [])
+    for action_type, params in preset:
+        if action_type == 'speak':
+            get_instance().send_telehealth_speech(device_id, 
+                                                 params['text'], 
+                                                 params['mood'], 
+                                                 params['intensity'])
+        elif action_type == 'behavior':
+            dj_handle_behavior(device_id, params['behavior_name'])
+        elif action_type == 'sound_effect':
+            dj_handle_sound_effect(device_id, params['sound_name'], params['volume'])
+        # Add small delay between actions
+        import time
+        time.sleep(0.5)
+
+def dj_handle_play_macro(device_id, macro_actions):
+    """Handle playback of recorded macro sequences"""
+    for action_data in macro_actions:
+        cmd = action_data.get('command')
+        if cmd == 'speak':
+            text = action_data.get('text', '')
+            markup = action_data.get('markup', '')
+            if markup:
+                get_instance().send_telehealth_markup(device_id, markup, text)
+            else:
+                mood = action_data.get('mood', 'neutral')
+                intensity = action_data.get('intensity', 0.5)
+                get_instance().send_telehealth_speech(device_id, text, mood, intensity)
+        elif cmd == 'quick_action':
+            dj_handle_quick_action(device_id, action_data.get('action'))
+        elif cmd == 'behavior':
+            dj_handle_behavior(device_id, action_data.get('behavior_name'))
+        elif cmd == 'sound_effect':
+            dj_handle_sound_effect(device_id, action_data.get('sound_name'), action_data.get('volume', 0.75))
+        elif cmd == 'preset':
+            dj_handle_preset(device_id, action_data.get('preset_name'))
+        
+        # Add delay between macro actions
+        import time
+        time.sleep(0.3)

@@ -35,15 +35,13 @@ INTERNAL_IPS = [
 # Allow all origins in development (configure properly in production)
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Database configuration for development
-# Can be overridden with environment variables
-DATABASES['default'].update({
-    'HOST': config('DB_HOST', default='localhost'),
-    'PORT': config('DB_PORT', default=5432, cast=int),
-    'USER': config('DB_USER', default='openmoxie'),
-    'PASSWORD': config('DB_PASSWORD', default='openmoxie'),
-    'NAME': config('DB_NAME', default='openmoxie_dev'),
-})
+# Database configuration for development - using SQLite
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # Static files configuration for development
 STATICFILES_DIRS = [

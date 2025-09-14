@@ -30,7 +30,7 @@ cd site
 print_status "Starting OpenMoxie server setup..."
 
 # Ensure we're using the virtual environment from the build
-export PATH="/app/.venv/bin:$PATH"
+export PATH="venv/bin:$PATH"
 
 # Ensure site/work directory exists and has proper permissions
 if [ ! -d "work" ]; then
@@ -73,7 +73,7 @@ if [ ! -z "$STATIC_ROOT" ]; then
     chmod -R 755 "$STATIC_ROOT" 2>/dev/null || true
 else
     # Default static root location
-    DEFAULT_STATIC_ROOT="/app/site/static"
+    DEFAULT_STATIC_ROOT="site/static"
     print_status "No STATIC_ROOT set, using default: $DEFAULT_STATIC_ROOT"
     mkdir -p "$DEFAULT_STATIC_ROOT"
     chmod -R 755 "$DEFAULT_STATIC_ROOT" 2>/dev/null || true
