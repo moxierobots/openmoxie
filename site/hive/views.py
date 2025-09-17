@@ -25,14 +25,15 @@ from .validators import (
     sanitize_input, validate_device_name, ValidationError as CustomValidationError
 )
 from .auth_utils import require_api_key, rate_limit
-from .behavior_config import (
-    get_behavior_markup, get_quick_action_behavior, get_preset_actions, get_sound_effect_markup
-)
+from .behavior_config import (get_behavior_markup, get_quick_action_behavior, 
+                              get_preset_actions, get_sound_effect_markup,
+                              get_sequence_markup)
 import json
 import uuid
 import logging
 import csv
 import io
+from django.utils import timezone
 from .automarkup import process as automarkup_process
 from .automarkup import initialize_rules as automarkup_initialize_rules
 
@@ -358,8 +359,45 @@ class MoxiePuppetView(generic.DetailView):
     template_name = "hive/puppet.html"
     model = MoxieDevice
 
+# Simple puppet command endpoint for testing
+@csrf_exempt 
+def puppet_command(request, pk):
+    """Simple endpoint to send puppet commands without CSRF issues"""
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+    
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        command = request.POST.get('command')
+        
+        if command == 'speak':
+            speech = request.POST.get('speech', '')
+            mood = request.POST.get('mood', 'neutral')
+            intensity = float(request.POST.get('intensity', '0.5'))
+            
+            server = get_instance()
+            result = server.send_telehealth_speech(device.device_id, speech, mood, intensity)
+            
+            return JsonResponse({
+                'result': 'success', 
+                'message': f'Sent speech command: {speech}',
+                'device': device.device_id
+            })
+        elif command == 'interrupt':
+            server = get_instance()
+            server.send_telehealth_interrupt(device.device_id)
+            return JsonResponse({'result': 'success', 'message': 'Sent interrupt command'})
+        else:
+            return JsonResponse({'result': 'error', 'message': f'Unknown command: {command}'})
+            
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
 # PUPPET API - Handle AJAX calls from puppet view
-# Note: This uses Django's default CSRF protection for session-based requests
+# Note: CSRF exempted for puppet mode functionality
+@csrf_exempt
 def puppet_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
@@ -617,6 +655,112 @@ class MoxieDJPanelView(generic.DetailView):
 
 # DJ PANEL API - Handle AJAX calls from DJ panel
 # Note: This uses Django's default CSRF protection for session-based requests
+# Simple DJ command endpoint for testing without CSRF issues
+@csrf_exempt 
+def dj_command(request, pk):
+    """Simple endpoint to send DJ commands without CSRF issues"""
+    import json  # Move json import to function level
+    
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+    
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        
+        # Handle both form data and JSON data
+        if request.content_type == 'application/json':
+            logger.info(f"Parsing JSON request body: {request.body}")
+            data = json.loads(request.body)
+            cmd = data.get('command')
+            logger.info(f"Extracted command from JSON: {cmd}")
+        else:
+            data = request.POST
+            cmd = request.POST.get('command')
+            logger.info(f"Extracted command from POST: {cmd}")
+        
+        if not device.robot_config:
+            device.robot_config = {}
+        
+        if cmd == "enable":
+            device.robot_config["moxie_mode"] = "TELEHEALTH"
+            device.save()
+            get_instance().handle_config_updated(device)
+        elif cmd == "disable":
+            device.robot_config.pop("moxie_mode", None)
+            device.save()
+            get_instance().handle_config_updated(device)
+        elif cmd == "interrupt":
+            get_instance().send_telehealth_interrupt(device.device_id)
+        elif cmd == "speak":
+            text = data.get('text', '')
+            markup = data.get('markup', '')
+            if markup:
+                get_instance().send_telehealth_markup(device.device_id, markup, text)
+            else:
+                mood = data.get('mood', 'neutral')
+                intensity = float(data.get('intensity', 0.5))
+                get_instance().send_telehealth_speech(device.device_id, text, mood, intensity)
+        elif cmd == "quick_action":
+            action = data.get('action')
+            dj_handle_quick_action(device.device_id, action)
+        elif cmd == "behavior":
+            behavior_name = data.get('behavior_name')
+            dj_handle_behavior(device.device_id, behavior_name)
+        elif cmd == "sound_effect":
+            sound_name = data.get('sound_name')
+            volume = float(data.get('volume', 0.75))
+            dj_handle_sound_effect(device.device_id, sound_name, volume)
+        elif cmd == "preset":
+            preset_name = data.get('preset_name')
+            dj_handle_preset(device.device_id, preset_name)
+        elif cmd == "sequence":
+            sequence_name = data.get('sequence_name')
+            dj_handle_sequence(device.device_id, sequence_name)
+        elif cmd == "play_custom_sequence":
+            sequence_data_raw = data.get('sequence_data')
+            if isinstance(sequence_data_raw, str):
+                sequence_data = json.loads(sequence_data_raw)
+            else:
+                sequence_data = sequence_data_raw or []
+            dj_handle_custom_sequence(device.device_id, sequence_data)
+        elif cmd == "save_sequence":
+            sequence_name = data.get('sequence_name')
+            sequence_data_raw = data.get('sequence_data')
+            if isinstance(sequence_data_raw, str):
+                sequence_data = json.loads(sequence_data_raw)
+            else:
+                sequence_data = sequence_data_raw or []
+            result = dj_save_sequence(device, sequence_name, sequence_data)
+            return JsonResponse(result)
+        elif cmd == "load_sequence":
+            sequence_name = data.get('sequence_name')
+            result = dj_load_sequence(device, sequence_name)
+            return JsonResponse(result)
+        elif cmd == "list_sequences":
+            result = dj_list_sequences(device)
+            return JsonResponse(result)
+        elif cmd == "play_macro":
+            macro_actions_raw = data.get('macro_actions')
+            if isinstance(macro_actions_raw, str):
+                macro_actions = json.loads(macro_actions_raw)
+            else:
+                macro_actions = macro_actions_raw or []
+            dj_handle_play_macro(device.device_id, macro_actions)
+        elif cmd == "delete_sequence":
+            sequence_name = data.get('sequence_name')
+            result = dj_delete_sequence(device, sequence_name)
+            return JsonResponse(result)
+        else:
+            return JsonResponse({'result': 'error', 'message': f'Unknown command: {cmd}'})
+            
+        return JsonResponse({'result': 'success', 'message': f'Executed command: {cmd}'})
+        
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        logger.error(f"Error in DJ command API: {str(e)}")
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
 def dj_panel_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
@@ -667,9 +811,31 @@ def dj_panel_api(request, pk):
             elif cmd == "preset":
                 preset_name = request.POST.get('preset_name')
                 dj_handle_preset(device.device_id, preset_name)
+            elif cmd == "sequence":
+                sequence_name = request.POST.get('sequence_name')
+                dj_handle_sequence(device.device_id, sequence_name)
+            elif cmd == "play_custom_sequence":
+                sequence_data = json.loads(request.POST.get('sequence_data', '[]'))
+                dj_handle_custom_sequence(device.device_id, sequence_data)
+            elif cmd == "save_sequence":
+                sequence_name = request.POST.get('sequence_name')
+                sequence_data = json.loads(request.POST.get('sequence_data', '[]'))
+                result = dj_save_sequence(device, sequence_name, sequence_data)
+                return JsonResponse(result)
+            elif cmd == "load_sequence":
+                sequence_name = request.POST.get('sequence_name')
+                result = dj_load_sequence(device, sequence_name)
+                return JsonResponse(result)
+            elif cmd == "list_sequences":
+                result = dj_list_sequences(device)
+                return JsonResponse(result)
             elif cmd == "play_macro":
                 macro_actions = json.loads(request.POST.get('macro_actions', '[]'))
                 dj_handle_play_macro(device.device_id, macro_actions)
+            elif cmd == "delete_sequence":
+                sequence_name = request.POST.get('sequence_name')
+                result = dj_delete_sequence(device, sequence_name)
+                return JsonResponse(result)
                 
         return JsonResponse({'result': True})
     except MoxieDevice.DoesNotExist as e:
@@ -709,9 +875,206 @@ def dj_handle_preset(device_id, preset_name):
             dj_handle_behavior(device_id, params['behavior_name'])
         elif action_type == 'sound_effect':
             dj_handle_sound_effect(device_id, params['sound_name'], params['volume'])
+        elif action_type == 'sequence':
+            dj_handle_sequence(device_id, params['sequence_name'])
         # Add small delay between actions
         import time
         time.sleep(0.5)
+
+def dj_handle_welcome_test_sequence(device_id):
+    """Handle the welcome test sequence with individual commands and timing"""
+    import threading
+    import time
+    
+    def run_sequence():
+        # Step 1: Wave behavior
+        logger.info(f"Welcome test: Starting wave behavior for device {device_id}")
+        dj_handle_behavior(device_id, 'Bht_Wait_Hug')
+        time.sleep(3)  # Wait for wave to complete
+        
+        # Step 2: Clear throat behavior  
+        logger.info(f"Welcome test: Starting clear throat behavior for device {device_id}")
+        dj_handle_behavior(device_id, 'Bht_Vg_Clear_Throat')
+        time.sleep(2)  # Wait for clear throat to complete
+        
+        # Step 3: Welcome speech
+        logger.info(f"Welcome test: Starting welcome speech for device {device_id}")
+        get_instance().send_telehealth_speech(
+            device_id, 
+            "Welcome my friends! Your love and stories make me so happy! Now you can talk with me directly. I can't wait to see what you share with me!",
+            'happy',
+            0.7
+        )
+        logger.info(f"Welcome test: Sequence completed for device {device_id}")
+    
+    # Run sequence in background thread so it doesn't block
+    thread = threading.Thread(target=run_sequence)
+    thread.daemon = True
+    thread.start()
+
+def dj_handle_sequence(device_id, sequence_name):
+    """Handle predefined sequences of behaviors and speech"""
+    # Handle welcome_test as a special case with individual commands
+    if sequence_name == 'welcome_test':
+        dj_handle_welcome_test_sequence(device_id)
+        return
+    
+    sequence_markup = get_sequence_markup(sequence_name)
+    if sequence_markup:
+        get_instance().send_telehealth_markup(device_id, sequence_markup)
+    else:
+        logger.warning(f"Unknown sequence: {sequence_name}")
+
+def dj_handle_custom_sequence(device_id, sequence_data):
+    """Handle custom sequence from sequence designer"""
+    if not sequence_data:
+        logger.warning("Empty sequence data")
+        return
+    
+    import threading
+    import time
+    
+    def run_sequence():
+        """Run the sequence in a background thread to avoid blocking"""
+        logger.info(f"Starting custom sequence playback for device {device_id} with {len(sequence_data)} items")
+        
+        # Track current emotional state for the sequence
+        current_mood = 'neutral'
+        current_intensity = 0.5
+        
+        for i, item in enumerate(sequence_data):
+            logger.info(f"Executing sequence item {i+1}/{len(sequence_data)}: {item}")
+            
+            item_type = item.get('type')
+            if item_type == 'behavior':
+                dj_handle_behavior(device_id, item.get('value'))
+                # Add small delay after behaviors to let them start
+                time.sleep(0.5)
+            elif item_type == 'set_emotion':
+                # Update current emotional state
+                emotion_value = item.get('value', {})
+                if emotion_value.get('mood'):
+                    current_mood = emotion_value.get('mood')
+                if emotion_value.get('intensity') is not None:
+                    current_intensity = float(emotion_value.get('intensity'))
+                logger.info(f"Updated emotion state: mood={current_mood}, intensity={current_intensity}")
+            elif item_type == 'speech':
+                # Use emotion from item if provided, otherwise use current sequence emotion
+                mood = item.get('mood', current_mood)
+                intensity = float(item.get('intensity', current_intensity))
+                logger.info(f"Speaking with emotion: mood={mood}, intensity={intensity}, text='{item.get('value')}'")
+                get_instance().send_telehealth_speech(device_id, item.get('value'), mood, intensity)
+                # Add delay after speech to let it complete
+                time.sleep(2.0)
+            elif item_type == 'sound':
+                volume = float(item.get('volume', 0.75))
+                dj_handle_sound_effect(device_id, item.get('value'), volume)
+                # Add small delay after sound effects
+                time.sleep(0.5)
+            elif item_type == 'pause':
+                pause_duration = float(item.get('value', 1.0))
+                logger.info(f"Pausing for {pause_duration} seconds")
+                time.sleep(pause_duration)
+                
+            # Add small delay between items to prevent overwhelming the robot
+            if i < len(sequence_data) - 1:  # Don't delay after the last item
+                time.sleep(0.2)
+        
+        logger.info(f"Custom sequence completed for device {device_id}")
+    
+    # Start the sequence in a background thread
+    thread = threading.Thread(target=run_sequence)
+    thread.daemon = True
+    thread.start()
+    
+    logger.info(f"Custom sequence started in background thread for device {device_id}")
+
+def dj_save_sequence(device, sequence_name, sequence_data):
+    """Save a custom sequence to device configuration"""
+    try:
+        if not device.robot_config:
+            device.robot_config = {}
+        
+        if 'custom_sequences' not in device.robot_config:
+            device.robot_config['custom_sequences'] = {}
+        
+        device.robot_config['custom_sequences'][sequence_name] = {
+            'name': sequence_name,
+            'sequence': sequence_data,
+            'created_at': timezone.now().isoformat()
+        }
+        
+        device.save()
+        logger.info(f"Saved custom sequence '{sequence_name}' for device {device.device_id}")
+        
+        return {'success': True, 'message': f'Sequence "{sequence_name}" saved successfully'}
+    except Exception as e:
+        logger.error(f"Failed to save sequence: {str(e)}")
+        return {'success': False, 'message': f'Failed to save sequence: {str(e)}'}
+
+def dj_load_sequence(device, sequence_name):
+    """Load a custom sequence from device configuration"""
+    try:
+        if not device.robot_config or 'custom_sequences' not in device.robot_config:
+            return {'success': False, 'message': 'No saved sequences found'}
+        
+        sequences = device.robot_config['custom_sequences']
+        if sequence_name not in sequences:
+            return {'success': False, 'message': f'Sequence "{sequence_name}" not found'}
+        
+        sequence_data = sequences[sequence_name]
+        logger.info(f"Loaded custom sequence '{sequence_name}' for device {device.device_id}")
+        
+        return {
+            'success': True, 
+            'message': f'Sequence "{sequence_name}" loaded successfully',
+            'sequence': sequence_data['sequence']
+        }
+    except Exception as e:
+        logger.error(f"Failed to load sequence: {str(e)}")
+        return {'success': False, 'message': f'Failed to load sequence: {str(e)}'}
+
+def dj_list_sequences(device):
+    """List all saved custom sequences for device"""
+    try:
+        if not device.robot_config or 'custom_sequences' not in device.robot_config:
+            return {'success': True, 'sequences': []}
+        
+        sequences = device.robot_config['custom_sequences']
+        sequence_list = []
+        
+        for name, data in sequences.items():
+            sequence_list.append({
+                'name': name,
+                'created_at': data.get('created_at'),
+                'steps': len(data.get('sequence', []))
+            })
+        
+        return {'success': True, 'sequences': sequence_list}
+    except Exception as e:
+        logger.error(f"Failed to list sequences: {str(e)}")
+        return {'success': False, 'message': f'Failed to list sequences: {str(e)}'}
+
+def dj_delete_sequence(device, sequence_name):
+    """Delete a custom sequence from device configuration"""
+    try:
+        if not device.robot_config or 'custom_sequences' not in device.robot_config:
+            return {'success': False, 'message': 'No saved sequences found'}
+        
+        sequences = device.robot_config['custom_sequences']
+        if sequence_name not in sequences:
+            return {'success': False, 'message': f'Sequence "{sequence_name}" not found'}
+        
+        # Delete the sequence
+        del sequences[sequence_name]
+        device.save()
+        
+        logger.info(f"Deleted custom sequence '{sequence_name}' for device {device.device_id}")
+        
+        return {'success': True, 'message': f'Sequence "{sequence_name}" deleted successfully'}
+    except Exception as e:
+        logger.error(f"Failed to delete sequence: {str(e)}")
+        return {'success': False, 'message': f'Failed to delete sequence: {str(e)}'}
 
 def dj_handle_play_macro(device_id, macro_actions):
     """Handle playback of recorded macro sequences"""

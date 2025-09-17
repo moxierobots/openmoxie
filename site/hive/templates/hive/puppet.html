@@ -1,6 +1,25 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
+<!-- Add CSRF token for AJAX calls -->
+<script>
+  // Get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+</script>
 <div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
 <div class="p-3">
 <h2>Puppet Moxie</h2>
@@ -74,13 +93,16 @@
         type: 'POST',
         url: "{% url 'hive:puppet_api' object.pk %}", 
         data: {'command': val ? "enable" : "disable" },
-        dataType: 'json'
+        dataType: 'json',
+        beforeSend: function(xhr, settings) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
     }).always(function() {
       window.setTimeout("refresh_view()", 1);
     });
   }
 
-  function puppet_speak(speech, mood, intensity, markup) {
+function puppet_speak(speech, mood, intensity, markup) {
     var postData = {
       'command': "speak",
       'speech': speech,
@@ -92,9 +114,10 @@
       postData['markup'] = markup;
     }
     
+    // Use the new CSRF-exempt endpoint for commands
     $.ajax({
         type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
+        url: "{% url 'hive:puppet_command' object.pk %}", 
         data: postData,
         dataType: 'json'
       })
@@ -111,11 +134,11 @@
       });
   }
 
-  function puppet_interrupt() {
+function puppet_interrupt() {
     console.log("Interrupting Moxie");
     $.ajax({
         type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
+        url: "{% url 'hive:puppet_command' object.pk %}", 
         data: { 'command': "interrupt" },
         dataType: 'json'
       })

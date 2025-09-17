@@ -26,6 +26,7 @@
       </div>
     </div>
 
+
     <!-- Quick Action Buttons -->
     <div class="quick-actions">
       <h3>Quick Actions</h3>
@@ -44,19 +45,25 @@
 
     <!-- Emotion Control Panel -->
     <div class="emotion-mixer">
-      <h3>Emotion Mixer</h3>
+      <h3>🎭 Emotion Mixer</h3>
       <div class="emotion-controls">
         <div class="emotion-channel">
           <label>Mood</label>
           <select id="mood_selector" class="mood-selector">
             <option value="neutral">Neutral</option>
             <option value="happy">Happy</option>
+            <option value="positive">Positive</option>
             <option value="excited">Excited</option>
             <option value="curious">Curious</option>
             <option value="silly">Silly</option>
             <option value="shy">Shy</option>
             <option value="concerned">Concerned</option>
             <option value="confused">Confused</option>
+            <option value="angry">Angry</option>
+            <option value="sad">Sad</option>
+            <option value="negative">Negative</option>
+            <option value="afraid">Afraid</option>
+            <option value="embarrassed">Embarrassed</option>
           </select>
         </div>
         <div class="emotion-channel">
@@ -65,6 +72,10 @@
             <input type="range" id="intensity_slider" min="0" max="100" value="50" class="emotion-slider">
             <span id="intensity_display">50%</span>
           </div>
+        </div>
+        <div class="emotion-channel">
+          <button id="apply_emotion" class="btn btn-primary">✨ Apply Emotion</button>
+          <small class="emotion-help">Changes robot's current emotional state</small>
         </div>
       </div>
     </div>
@@ -115,6 +126,7 @@
             <button class="behavior-btn" data-behavior="Bht_Vg_Clear_Throat">Clear Throat</button>
             <button class="behavior-btn" data-behavior="Bht_Vg_Gulp">Gulp</button>
             <button class="behavior-btn" data-behavior="Bht_Vg_Psst">Psst</button>
+            <button class="behavior-btn" data-behavior="Bht_Back_and_forth_arm_wave">🦈 Baby Shark Dance</button>
           </div>
         </div>
         <div class="behavior-section">
@@ -188,6 +200,253 @@
       </div>
     </div>
 
+    <!-- Sequence Designer -->
+    <!-- SEQUENCE DESIGNER TEST MARKER -->
+    <div class="sequence-designer">
+      <h3>🎭 Sequence Designer</h3>
+      
+      <!-- Behavior Palette -->
+      <div class="palette-section">
+        <h4>Drag & Drop Library</h4>
+        <div class="behavior-palette">
+          <div class="palette-category">
+            <h5>Laughs & Vocal</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Belly" draggable="true">
+                😄 Belly Laugh
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Big" draggable="true">
+                😆 Big Laugh
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Big_Fourcount" draggable="true">
+                🤣 Four-Count Laugh
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Mischief" draggable="true">
+                😏 Mischief Laugh
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Nervous" draggable="true">
+                😅 Nervous Laugh
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Gasp" draggable="true">
+                😱 Gasp
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Expressions & Reactions</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Oh_Eureka" draggable="true">
+                💡 Eureka!
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Ooo_Cringe" draggable="true">
+                😬 Cringe
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Ooo_Urgent" draggable="true">
+                🚨 Urgent
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Startled" draggable="true">
+                😲 Startled
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_sigh_relief" draggable="true">
+                😌 Sigh Relief
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_yawn_big" draggable="true">
+                😴 Big Yawn
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Movements & Poses</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Spin_360" draggable="true">
+                🌀 360° Spin
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Photo_pose_Curious" draggable="true">
+                🤔 Curious Pose
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Circle_motion" draggable="true">
+                💃 Circle Motion
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Turn_Away" draggable="true">
+                🔄 Turn Away
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Turn_Back" draggable="true">
+                ↩️ Turn Back
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Wait_Hug" draggable="true">
+                🤗 Wait for Hug
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Vocal Gestures</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_gasp" draggable="true">
+                😱 Gasp
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_cough" draggable="true">
+                😷 Cough
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_gulp" draggable="true">
+                😅 Gulp
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Clear_Throat" draggable="true">
+                😤 Clear Throat
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Wing_Flap" draggable="true">
+                🐦 Wing Flap
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Psst" draggable="true">
+                🤫 Psst
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Special Actions</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Ice_Cream" draggable="true">
+                🍦 Ice Cream
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_suckThroughTeeth" draggable="true">
+                🦷 Suck Through Teeth
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vision_Check" draggable="true">
+                👁️ Vision Check
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Gulp" draggable="true">
+                😅 Gulp
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Back_and_forth_arm_wave" draggable="true">
+                🦈 Baby Shark Dance
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Sleep & Rest</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Snore_Light" draggable="true">
+                😴 Light Snore
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Snore_Heavy" draggable="true">
+                💤 Heavy Snore
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Shiver_Sustained" draggable="true">
+                🥶 Shiver
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Hmm_Confused_Sustained" draggable="true">
+                🤔 Confused Hmm
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Grunt_In_Transit_Sustained" draggable="true">
+                😤 Grunt
+              </div>
+              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Nnn_Disagree" draggable="true">
+                😐 Disagree
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Emotion Mixer - Moods</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="emotion_mood" data-value="happy" draggable="true">
+                😊 Happy
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="sad" draggable="true">
+                😢 Sad
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="excited" draggable="true">
+                🤩 Excited
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="calm" draggable="true">
+                😌 Calm
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="angry" draggable="true">
+                😠 Angry
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="surprised" draggable="true">
+                😲 Surprised
+              </div>
+              <div class="draggable-item" data-type="emotion_mood" data-value="neutral" draggable="true">
+                😐 Neutral
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-category">
+            <h5>Emotion Mixer - Intensity</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="emotion_intensity" data-value="low" draggable="true">
+                🔅 Low Intensity (1-3)
+              </div>
+              <div class="draggable-item" data-type="emotion_intensity" data-value="medium" draggable="true">
+                💡 Medium Intensity (4-6)
+              </div>
+              <div class="draggable-item" data-type="emotion_intensity" data-value="high" draggable="true">
+                🔆 High Intensity (7-10)
+              </div>
+            </div>
+          </div>
+          
+          <div class="palette-category">
+            <h5>Speech & Sound</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="speech" data-value="" draggable="true">
+                💬 Speech
+              </div>
+              <div class="draggable-item" data-type="sound" data-value="sfxmm_incoming02" draggable="true">
+                🔊 Sound Effect
+              </div>
+            </div>
+          </div>
+          
+          <div class="palette-category">
+            <h5>Timing</h5>
+            <div class="palette-items">
+              <div class="draggable-item" data-type="pause" data-value="1.0" draggable="true">
+                ⏸️ Pause (1s)
+              </div>
+              <div class="draggable-item" data-type="pause" data-value="2.0" draggable="true">
+                ⏸️ Pause (2s)
+              </div>
+              <div class="draggable-item" data-type="pause" data-value="3.0" draggable="true">
+                ⏸️ Pause (3s)
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Sequence Timeline -->
+      <div class="timeline-section">
+        <h4>Sequence Timeline</h4>
+        <div class="sequence-timeline" id="sequence-timeline">
+          <div class="timeline-placeholder">Drag items here to build your sequence</div>
+        </div>
+      </div>
+      
+      <!-- Sequence Controls -->
+      <div class="sequence-controls">
+        <button id="play-sequence" class="btn btn-success" disabled>▶️ Play Sequence</button>
+        <button id="clear-sequence" class="btn btn-secondary">🗑️ Clear</button>
+        <button id="save-sequence" class="btn btn-info" disabled>💾 Save</button>
+        <button id="toggle-markup" class="btn btn-outline-warning">🔍 Show Markup</button>
+        <input type="text" id="sequence-name" placeholder="Sequence name..." class="sequence-name-input">
+      </div>
+      
+      <!-- Saved Sequences -->
+      <div class="saved-sequences-section">
+        <h4>Saved Sequences</h4>
+        <div id="saved-sequences-list" class="saved-sequences-list">
+          <div class="loading-message">Loading saved sequences...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Preset Panel -->
     <div class="preset-panel">
       <h3>Presets & Macros</h3>
@@ -237,6 +496,470 @@
 
 .status-section {
   grid-column: 1 / -1;
+}
+
+.test-sequence {
+  grid-column: 1 / -1;
+  background: linear-gradient(145deg, #2d4a2d, #1a2e1a);
+  border: 2px solid #4a7c59;
+}
+
+.test-description {
+  margin: 10px 0;
+  color: #a8d8a8;
+  font-size: 14px;
+  text-align: center;
+}
+
+.btn-test-sequence {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  background: linear-gradient(145deg, #5cb85c, #449d44);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-test-sequence:hover {
+  background: linear-gradient(145deg, #6cbf6c, #51a751);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-test-sequence:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+}
+
+/* Sequence Designer Styles */
+.sequence-designer {
+  grid-column: 1 / -1;
+  background: linear-gradient(145deg, #2d2d4a, #1a1a2e);
+  border: 2px solid #4a4a7c;
+}
+
+.palette-section {
+  margin-bottom: 20px;
+}
+
+.behavior-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.palette-category {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.palette-category h5 {
+  color: #7c7cff;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.palette-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draggable-item {
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: grab;
+  font-size: 12px;
+  font-weight: bold;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Color-coded draggable items by type */
+.draggable-item[data-type="behavior"] {
+  background: linear-gradient(145deg, #ff6b6b, #e55555);
+  border: 1px solid #ff8888;
+}
+
+.draggable-item[data-type="emotion_mood"] {
+  background: linear-gradient(145deg, #4ecdc4, #44b5ae);
+  border: 1px solid #6ed9d1;
+}
+
+.draggable-item[data-type="emotion_intensity"] {
+  background: linear-gradient(145deg, #ffe66d, #e6cc5a);
+  border: 1px solid #ffeb7a;
+}
+
+.draggable-item[data-type="speech"] {
+  background: linear-gradient(145deg, #95e1d3, #85ccbf);
+  border: 1px solid #a8e6d8;
+}
+
+.draggable-item[data-type="sound"] {
+  background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
+  border: 1px solid #ffcfb0;
+}
+
+.draggable-item[data-type="pause"] {
+  background: linear-gradient(145deg, #a8e6cf, #97d4b8);
+  border: 1px solid #b8ebd5;
+}
+
+.draggable-item:not([data-type]), .draggable-item[data-type=""] {
+  background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
+  border: 1px solid #5a5a8c;
+}
+
+.draggable-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+  filter: brightness(1.1);
+}
+
+.draggable-item:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.draggable-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.sequence-timeline.drag-over {
+  border-color: #7c7cff !important;
+  background: linear-gradient(145deg, #4a4a6a, #3a3a5a) !important;
+  box-shadow: 0 0 15px rgba(124, 124, 255, 0.5) !important;
+}
+
+.timeline-section {
+  margin-bottom: 20px;
+}
+
+.sequence-timeline {
+  min-height: 120px;
+  background: linear-gradient(145deg, #2c2c54, #1a1a2e);
+  border: 3px dashed #7c7cff;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  transition: all 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #7c7cff #2c2c54;
+}
+
+.sequence-timeline::-webkit-scrollbar {
+  height: 8px;
+}
+
+.sequence-timeline::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-radius: 4px;
+}
+
+.sequence-timeline::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #7c7cff, #6b6bcc);
+  border-radius: 4px;
+}
+
+.sequence-timeline::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(145deg, #8c8cff, #7c7cff);
+}
+
+.sequence-timeline.drag-over {
+  background: linear-gradient(145deg, #3c3c84, #2a2a5e);
+  border-color: #9c9cff;
+  box-shadow: 0 0 20px rgba(156, 156, 255, 0.6);
+}
+
+.timeline-placeholder {
+  color: #7c7cff;
+  font-style: italic;
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.timeline-item {
+  color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  position: relative;
+  min-width: 140px;
+  flex-shrink: 0;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.4);
+  cursor: grab;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.timeline-item:active {
+  cursor: grabbing;
+}
+
+.timeline-item.dragging {
+  opacity: 0.6;
+  transform: scale(0.95);
+}
+
+/* Color-coded timeline items by type */
+.timeline-item[data-type="behavior"] {
+  background: linear-gradient(145deg, #ff6b6b, #e55555);
+  border: 2px solid #ff8888;
+}
+
+.timeline-item[data-type="emotion_mood"] {
+  background: linear-gradient(145deg, #4ecdc4, #44b5ae);
+  border: 2px solid #6ed9d1;
+}
+
+.timeline-item[data-type="emotion_intensity"] {
+  background: linear-gradient(145deg, #ffe66d, #e6cc5a);
+  border: 2px solid #ffeb7a;
+}
+
+.timeline-item[data-type="set_emotion"] {
+  background: linear-gradient(145deg, #ff9a9e, #fad0c4);
+  border: 2px solid #ffb3ba;
+}
+
+.timeline-item[data-type="speech"] {
+  background: linear-gradient(145deg, #95e1d3, #85ccbf);
+  border: 2px solid #a8e6d8;
+}
+
+.timeline-item[data-type="sound"] {
+  background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
+  border: 2px solid #ffcfb0;
+}
+
+.timeline-item[data-type="pause"] {
+  background: linear-gradient(145deg, #a8e6cf, #97d4b8);
+  border: 2px solid #b8ebd5;
+}
+
+.timeline-item[data-type="default"], .timeline-item:not([data-type]) {
+  background: linear-gradient(145deg, #7c7cff, #6b6bcc);
+  border: 2px solid #9c9cff;
+}
+
+.timeline-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 16px rgba(0,0,0,0.5);
+  filter: brightness(1.1);
+}
+
+.timeline-item.drag-over-timeline {
+  border-color: #fff !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.7) !important;
+  transform: scale(1.05);
+}
+
+.timeline-item.dragging {
+  opacity: 0.6;
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.timeline-item:hover {
+  cursor: grab;
+}
+
+.timeline-item .item-number {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.timeline-item .remove-btn {
+  background: rgba(255, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  margin-left: auto;
+  transition: background 0.2s;
+}
+
+.timeline-item .remove-btn:hover {
+  background: rgba(255, 0, 0, 0.9);
+}
+
+.timeline-item .markup-display {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+  color: #b0b0b0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 60px;
+  overflow-y: auto;
+  word-break: break-all;
+  display: none;
+}
+
+.timeline-item .markup-display.show {
+  display: block;
+}
+
+.timeline-item .markup-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  border: none;
+  border-radius: 3px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 8px;
+  line-height: 1;
+  transition: background 0.2s;
+  margin-left: 4px;
+}
+
+.timeline-item .markup-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.timeline-item .markup-toggle.active {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+.sequence-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sequence-controls .btn {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 10px 15px;
+}
+
+.sequence-name-input {
+  padding: 10px;
+  border-radius: 6px;
+  background: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  font-size: 14px;
+  min-width: 200px;
+}
+
+.sequence-name-input:focus {
+  outline: none;
+  border-color: #7c7cff;
+  box-shadow: 0 0 5px rgba(124, 124, 255, 0.3);
+}
+
+/* Saved Sequences Styles */
+.saved-sequences-section {
+  margin-top: 20px;
+}
+
+.saved-sequences-section h4 {
+  color: #7c7cff;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.saved-sequences-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.saved-sequence-btn {
+  background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.saved-sequence-btn:hover {
+  background: linear-gradient(145deg, #5a5a8c, #4a4a7c);
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+}
+
+.saved-sequence-btn .delete-sequence {
+  background: rgba(255, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  margin-left: 5px;
+}
+
+.saved-sequence-btn .delete-sequence:hover {
+  background: rgba(255, 0, 0, 0.9);
+}
+
+.loading-message {
+  color: #888;
+  font-style: italic;
+  padding: 10px;
 }
 
 .status-indicators {
@@ -341,6 +1064,19 @@
   background: linear-gradient(145deg, #ff6b6b, #cc5555);
   cursor: pointer;
   box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+.emotion-help {
+  color: #aaa;
+  font-style: italic;
+  display: block;
+  margin-top: 5px;
+}
+
+#apply_emotion {
+  width: 100%;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .behavior-section h4 {
@@ -467,7 +1203,7 @@ let currentMacro = [];
 function setDJMode(enabled) {
   $.ajax({
     type: 'POST',
-    url: "{% url 'hive:dj_api' object.pk %}",
+    url: "{% url 'hive:dj_command' object.pk %}",
     data: {'command': enabled ? "enable" : "disable"},
     dataType: 'json'
   }).always(function() {
@@ -545,9 +1281,10 @@ function sendDJCommand(command, params = {}) {
     console.log('Added to macro recording:', data);
   }
   
+  // Use the new CSRF-exempt endpoint for commands
   $.ajax({
     type: 'POST',
-    url: "{% url 'hive:dj_api' object.pk %}",
+    url: "{% url 'hive:dj_command' object.pk %}",
     data: data,
     dataType: 'json',
     beforeSend: function() {
@@ -637,6 +1374,29 @@ $('#speak_button').on('click', function() {
   });
 });
 
+// Emotion Mixer - Apply emotion immediately to robot
+$('#apply_emotion').on('click', function() {
+  const mood = $('#mood_selector').val();
+  const intensity = $('#intensity_slider').val() / 100;
+  
+  console.log('Applying emotion:', mood, 'intensity:', intensity);
+  
+  // Send emotion command similar to puppet mode
+  sendDJCommand('set_emotion', {
+    mood: mood,
+    intensity: intensity
+  });
+  
+  // Visual feedback
+  const btn = $(this);
+  const originalText = btn.text();
+  btn.text('✓ Applied!').prop('disabled', true);
+  
+  setTimeout(() => {
+    btn.text(originalText).prop('disabled', false);
+  }, 1500);
+});
+
 $('#interrupt_button').on('click', function() {
   sendDJCommand('interrupt');
 });
@@ -675,6 +1435,601 @@ $(document).on('click', '.preset-btn', function(e) {
   }
   
   sendDJCommand('preset', { preset_name: preset });
+});
+
+// Welcome Test Sequence
+$('#welcome_test_btn').on('click', function() {
+  console.log('Welcome test sequence triggered');
+  // Add visual feedback
+  $(this).prop('disabled', true).text('Running...');
+  
+  sendDJCommand('sequence', { sequence_name: 'welcome_test' });
+  
+  // Re-enable button after a delay
+  setTimeout(() => {
+    $(this).prop('disabled', false).text('▶️ Run Welcome Test');
+  }, 3000);
+});
+
+// Sequence Designer Variables
+let currentSequence = [];
+let draggedItem = null;
+let showMarkupMode = false;
+let draggedTimelineItem = null;
+let draggedTimelineIndex = null;
+
+// Drag and Drop Functionality
+$(document).on('dragstart', '.draggable-item', function(e) {
+  draggedItem = $(this);
+  console.log('Drag started:', draggedItem.data());
+  $(this).addClass('dragging');
+  e.originalEvent.dataTransfer.effectAllowed = 'copy';
+  // Add data to transfer for debugging
+  e.originalEvent.dataTransfer.setData('text/plain', JSON.stringify(draggedItem.data()));
+});
+
+$(document).on('dragover', '.sequence-timeline', function(e) {
+  e.preventDefault();
+  e.originalEvent.dataTransfer.dropEffect = 'copy';
+  $(this).addClass('drag-over');
+});
+
+$(document).on('dragleave', '.sequence-timeline', function(e) {
+  $(this).removeClass('drag-over');
+});
+
+$(document).on('dragend', '.draggable-item', function(e) {
+  $(this).removeClass('dragging');
+  draggedItem = null;
+});
+
+$(document).on('drop', '.sequence-timeline', function(e) {
+  e.preventDefault();
+  $(this).removeClass('drag-over');
+  $('.draggable-item').removeClass('dragging');
+  
+  console.log('Drop event triggered on timeline container');
+  console.log('draggedItem (from library):', !!draggedItem);
+  console.log('draggedTimelineItem (reordering):', !!draggedTimelineItem);
+  
+  // Only handle library items being dropped, not timeline reordering
+  if (draggedItem && !draggedTimelineItem) {
+    console.log('Processing dropped item:', draggedItem.data());
+    const itemData = {
+      type: draggedItem.data('type'),
+      value: draggedItem.data('value'),
+      display: draggedItem.text().trim()
+    };
+    
+    // Handle special cases for speech
+    if (itemData.type === 'speech') {
+      console.log('Prompting for speech text');
+      const text = prompt('Enter speech text:', 'Hello there!');
+      if (text === null || text.trim() === '') {
+        console.log('Speech input cancelled or empty');
+        draggedItem = null;
+        return; // User cancelled or entered empty text
+      }
+      itemData.value = text;
+      itemData.display = `💬 "${text.length > 20 ? text.substring(0, 20) + '...' : text}"`;
+      console.log('Speech item created:', itemData);
+    }
+    
+    // Handle sound effects
+    if (itemData.type === 'sound') {
+      console.log('Processing sound effect');
+      if (!itemData.value) {
+        itemData.value = 'sfxmm_incoming02'; // Default sound
+      }
+      itemData.display = `🔊 ${itemData.value}`;
+    }
+    
+    // Handle emotion mixer mood settings
+    if (itemData.type === 'emotion_mood') {
+      console.log('Processing emotion mood setting');
+      // Convert to set_emotion command format
+      itemData.type = 'set_emotion';
+      itemData.value = {
+        mood: itemData.value,
+        intensity: 0.5 // Default intensity
+      };
+      itemData.display = `😎 Mood: ${itemData.value.mood.charAt(0).toUpperCase() + itemData.value.mood.slice(1)}`;
+    }
+    
+    // Handle emotion mixer intensity settings
+    if (itemData.type === 'emotion_intensity') {
+      console.log('Processing emotion intensity setting');
+      let intensityValue = 0.5; // default medium
+      if (itemData.value === 'low') intensityValue = 0.2;
+      else if (itemData.value === 'medium') intensityValue = 0.5;
+      else if (itemData.value === 'high') intensityValue = 0.8;
+      
+      // Convert to set_emotion command format
+      itemData.type = 'set_emotion';
+      itemData.value = {
+        mood: 'neutral', // Default mood
+        intensity: intensityValue
+      };
+      itemData.display = `⚡ Intensity: ${Math.round(intensityValue * 100)}%`;
+    }
+    
+    console.log('Adding item to sequence:', itemData);
+    addToSequence(itemData);
+    draggedItem = null;
+  } else {
+    console.log('No dragged item found');
+  }
+});
+
+// Add item to sequence
+function addToSequence(itemData) {
+  console.log('DEBUG: addToSequence called with:', itemData);
+  currentSequence.push(itemData);
+  console.log('DEBUG: currentSequence now has', currentSequence.length, 'items:', currentSequence);
+  updateSequenceDisplay();
+  updateSequenceControls();
+}
+
+// Markup Generation Functions
+function generateMarkupForItem(item, currentMood = 'neutral', currentIntensity = 0.5) {
+  switch (item.type) {
+    case 'behavior':
+      return generateBehaviorMarkup(item.value);
+    
+    case 'speech':
+      const mood = item.mood || currentMood;
+      const intensity = item.intensity !== undefined ? item.intensity : currentIntensity;
+      return `Speech with mood: ${mood}, intensity: ${Math.round(intensity * 100)}% - "${item.value}"`;
+    
+    case 'sound':
+      const volume = item.volume || 0.75;
+      return generateSoundMarkup(item.value, volume);
+    
+    case 'pause':
+      const duration = parseFloat(item.value) || 1.0;
+      return `<break time="${duration}s"/>`;
+    
+    case 'set_emotion':
+      const emotionData = item.value || {};
+      return `Emotion State: mood=${emotionData.mood || 'neutral'}, intensity=${Math.round((emotionData.intensity || 0.5) * 100)}%`;
+    
+    default:
+      return 'Unknown item type';
+  }
+}
+
+function generateBehaviorMarkup(behaviorName) {
+  // Predefined behavior commands from behavior_config.py
+  const behaviorCommands = {
+    'Bht_Vg_Laugh_Belly': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Belly+,   +Track+:++ }"/>',
+    'Bht_Vg_Clear_Throat': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>',
+    'Bht_Wait_Hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
+    'Bht_Spin_360': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Spin_360+,   +Track+:++ }"/>',
+    'Bht_Photo_pose_Curious': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Photo_pose_Curious+,   +Track+:++ }"/>',
+    'Bht_Vg_Hmm_Confused_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Hmm_Confused_Sustained+,   +Track+:++ }"/>',
+    'Bht_Startled': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Startled+,   +Track+:++ }"/>',
+    'Bht_Turn_Away': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Away+,   +Track+:++ }"/>',
+    'Bht_Circle_motion': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Circle_motion+,   +Track+:++ }"/>',
+    'Bht_Vg_Snore_Heavy': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Heavy+,   +Track+:++ }"/>',
+    'Bht_Back_and_forth_arm_wave': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:3.0,   +repeat+:2,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Back_and_forth_arm_wave+,   +Track+:++ }"/>'
+  };
+  
+  if (behaviorCommands[behaviorName]) {
+    return behaviorCommands[behaviorName];
+  }
+  
+  // Generate default behavior markup template
+  return `<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+${behaviorName}+,   +Track+:++ }"/>`;
+}
+
+function generateSoundMarkup(soundName, volume) {
+  return `<mark name="cmd:playaudio,data:{+SoundToPlay+:+${soundName}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:${volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}"/>`;
+}
+
+// Update sequence timeline display
+function updateSequenceDisplay() {
+  const timeline = $('#sequence-timeline');
+  timeline.empty();
+  
+  if (currentSequence.length === 0) {
+    timeline.append('<div class="timeline-placeholder">Drag items here to build your sequence</div>');
+    return;
+  }
+  
+  // Track current emotional state for markup generation
+  let currentMood = 'neutral';
+  let currentIntensity = 0.5;
+  
+  currentSequence.forEach((item, index) => {
+    // Update emotional state tracking
+    if (item.type === 'set_emotion' && item.value) {
+      if (item.value.mood) currentMood = item.value.mood;
+      if (item.value.intensity !== undefined) currentIntensity = item.value.intensity;
+    }
+    
+    // Generate markup for this item
+    const markup = generateMarkupForItem(item, currentMood, currentIntensity);
+    
+    const timelineItem = $(`
+      <div class="timeline-item" data-index="${index}" data-type="${item.type}" draggable="true">
+        <div class="item-number">${index + 1}</div>
+        <div class="item-content">${item.display}</div>
+        <button class="markup-toggle ${showMarkupMode ? 'active' : ''}" data-index="${index}" title="Show/Hide Markup">⚡</button>
+        <button class="remove-btn" data-index="${index}">×</button>
+        <div class="markup-display ${showMarkupMode ? 'show' : ''}" data-index="${index}">${markup}</div>
+      </div>
+    `);
+    timeline.append(timelineItem);
+  });
+}
+
+// Remove item from sequence
+$(document).on('click', '.remove-btn', function(e) {
+  e.stopPropagation();
+  const index = parseInt($(this).data('index'));
+  currentSequence.splice(index, 1);
+  updateSequenceDisplay();
+  updateSequenceControls();
+});
+
+// Toggle individual item markup display
+$(document).on('click', '.markup-toggle', function(e) {
+  e.stopPropagation();
+  const index = $(this).data('index');
+  const markupDisplay = $(this).siblings('.markup-display');
+  const isShowing = markupDisplay.hasClass('show');
+  
+  if (isShowing) {
+    markupDisplay.removeClass('show');
+    $(this).removeClass('active');
+  } else {
+    markupDisplay.addClass('show');
+    $(this).addClass('active');
+  }
+});
+
+// Global markup toggle button
+$('#toggle-markup').on('click', function() {
+  showMarkupMode = !showMarkupMode;
+  
+  if (showMarkupMode) {
+    $(this).text('🔍 Hide Markup').removeClass('btn-outline-warning').addClass('btn-warning');
+    $('.markup-display').addClass('show');
+    $('.markup-toggle').addClass('active');
+  } else {
+    $(this).text('🔍 Show Markup').removeClass('btn-warning').addClass('btn-outline-warning');
+    $('.markup-display').removeClass('show');
+    $('.markup-toggle').removeClass('active');
+  }
+});
+
+// Timeline item reordering functionality
+$(document).on('dragstart', '.timeline-item', function(e) {
+  // Prevent event from bubbling to avoid conflicts
+  e.stopPropagation();
+  
+  draggedTimelineItem = $(this);
+  draggedTimelineIndex = parseInt($(this).data('index'));
+  $(this).addClass('dragging');
+  e.originalEvent.dataTransfer.effectAllowed = 'move';
+  e.originalEvent.dataTransfer.setData('text/plain', 'timeline-reorder');
+  
+  console.log('Timeline item drag started:', draggedTimelineIndex, 'item:', $(this)[0]);
+  
+  // Add visual feedback
+  $(this).css('opacity', '0.6');
+});
+
+$(document).on('dragover', '.timeline-item', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (draggedTimelineItem && $(this)[0] !== draggedTimelineItem[0]) {
+    e.originalEvent.dataTransfer.dropEffect = 'move';
+    $(this).addClass('drag-over-timeline');
+    console.log('Dragging over timeline item:', $(this).data('index'));
+  }
+});
+
+$(document).on('dragleave', '.timeline-item', function(e) {
+  $(this).removeClass('drag-over-timeline');
+});
+
+$(document).on('drop', '.timeline-item', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  console.log('Drop on timeline item detected');
+  console.log('draggedTimelineItem:', !!draggedTimelineItem);
+  console.log('draggedItem (from library):', !!draggedItem);
+  
+  // Only handle timeline reordering if we're dragging a timeline item
+  if (draggedTimelineItem && !draggedItem && $(this)[0] !== draggedTimelineItem[0]) {
+    const dropIndex = parseInt($(this).data('index'));
+    console.log('Reordering timeline items:', draggedTimelineIndex, '->', dropIndex);
+    
+    // Reorder the sequence array
+    const draggedSequenceItem = currentSequence[draggedTimelineIndex];
+    currentSequence.splice(draggedTimelineIndex, 1);
+    currentSequence.splice(dropIndex, 0, draggedSequenceItem);
+    
+    updateSequenceDisplay();
+  }
+  
+  $('.timeline-item').removeClass('drag-over-timeline').css('opacity', '');
+});
+
+$(document).on('dragend', '.timeline-item', function(e) {
+  console.log('Timeline item drag ended');
+  $('.timeline-item').removeClass('dragging drag-over-timeline').css('opacity', '');
+  draggedTimelineItem = null;
+  draggedTimelineIndex = null;
+});
+
+// Update sequence control buttons
+function updateSequenceControls() {
+  const hasItems = currentSequence.length > 0;
+  $('#play-sequence').prop('disabled', !hasItems);
+  $('#save-sequence').prop('disabled', !hasItems);
+}
+
+// Play sequence
+$('#play-sequence').on('click', function() {
+  if (currentSequence.length === 0) {
+    alert('No sequence to play!');
+    return;
+  }
+  
+  console.log('Playing sequence:', currentSequence);
+  playSequence(currentSequence);
+});
+
+// Play sequence function
+function playSequence(sequence) {
+  console.log('Playing sequence with emotion integration:', sequence);
+  
+  if (!sequence || sequence.length === 0) {
+    alert('No sequence to play!');
+    return;
+  }
+  
+  // Visual feedback - disable play button during playback
+  const playBtn = $('#play-sequence');
+  const originalText = playBtn.text();
+  playBtn.prop('disabled', true).text('🎬 Playing...');
+  
+  // Simple emotion integration - track emotions and apply to speech
+  let currentMood = 'neutral';
+  let currentIntensity = 0.5;
+  const processedSequence = [];
+  
+  for (let i = 0; i < sequence.length; i++) {
+    const item = sequence[i];
+    
+    if (item.type === 'set_emotion') {
+      // Update current emotion state
+      if (item.value && item.value.mood) {
+        currentMood = item.value.mood;
+      }
+      if (item.value && item.value.intensity !== undefined) {
+        currentIntensity = item.value.intensity;
+      }
+      processedSequence.push(item);
+    } else if (item.type === 'speech') {
+      // Add emotion context to speech
+      const emotionalSpeech = {
+        ...item,
+        mood: currentMood,
+        intensity: currentIntensity
+      };
+      console.log('Adding emotional speech:', emotionalSpeech);
+      processedSequence.push(emotionalSpeech);
+    } else {
+      processedSequence.push(item);
+    }
+  }
+  
+  console.log('Final processed sequence:', processedSequence);
+  
+  // Use the backend custom sequence handler with improved error handling
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_command' object.pk %}",
+    data: {
+      command: 'play_custom_sequence',
+      sequence_data: JSON.stringify(processedSequence)
+    },
+    dataType: 'json',
+    timeout: 10000, // 10 second timeout
+    success: function(response) {
+      console.log('Sequence play response:', response);
+      if (response.result === 'success') {
+        console.log('✓ Sequence started successfully');
+        // Show temporary success message
+        playBtn.text('✓ Playing!');
+        setTimeout(() => {
+          playBtn.text(originalText).prop('disabled', false);
+        }, 3000); // Re-enable after 3 seconds
+      } else {
+        console.error('Sequence play failed:', response.message);
+        alert('Failed to play sequence: ' + (response.message || 'Unknown error'));
+        playBtn.text(originalText).prop('disabled', false);
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('AJAX error playing sequence:', status, error);
+      console.error('Response:', xhr.responseText);
+      alert('Failed to send sequence to robot: ' + error);
+      playBtn.text(originalText).prop('disabled', false);
+    }
+  });
+}
+
+// Note: Emotion integration is now handled directly in playSequence function
+
+// Clear sequence
+$('#clear-sequence').on('click', function() {
+  if (currentSequence.length > 0 && !confirm('Clear current sequence?')) {
+    return;
+  }
+  currentSequence = [];
+  updateSequenceDisplay();
+  updateSequenceControls();
+});
+
+// Save sequence
+$('#save-sequence').on('click', function() {
+  const name = $('#sequence-name').val().trim();
+  if (!name) {
+    alert('Please enter a sequence name!');
+    return;
+  }
+  
+  if (currentSequence.length === 0) {
+    alert('No sequence to save!');
+    return;
+  }
+  
+  // Check if sequence already exists and ask for confirmation
+  const confirmMessage = 'Save sequence "' + name + '"? This will overwrite any existing sequence with the same name.';
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  // Save to backend
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_command' object.pk %}",
+    data: {
+      command: 'save_sequence',
+      sequence_name: name,
+      sequence_data: JSON.stringify(currentSequence)
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        alert('✓ Sequence "' + name + '" saved successfully!');
+        // Keep the name in the input for easy re-saving after edits
+        console.log('Sequence saved:', name, 'with', currentSequence.length, 'items');
+        // Refresh the saved sequences list
+        loadSavedSequences();
+      } else {
+        alert('Save failed: ' + response.message);
+      }
+    },
+    error: function() {
+      alert('Failed to save sequence!');
+    }
+  });
+});
+
+// Load and display saved sequences
+function loadSavedSequences() {
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_command' object.pk %}",
+    data: { command: 'list_sequences' },
+    dataType: 'json',
+    success: function(response) {
+      const container = $('#saved-sequences-list');
+      
+      if (!response.success || response.sequences.length === 0) {
+        container.html('<div class="loading-message">No saved sequences yet. Create and save a sequence to see it here!</div>');
+        return;
+      }
+      
+      // Clear and populate with sequence buttons
+      container.empty();
+      response.sequences.forEach(function(seq) {
+        const button = $(`
+          <button class="saved-sequence-btn" data-sequence-name="${seq.name}">
+            📋 ${seq.name}
+            <span class="delete-sequence" data-sequence-name="${seq.name}" title="Delete sequence">×</span>
+          </button>
+        `);
+        container.append(button);
+      });
+    },
+    error: function() {
+      $('#saved-sequences-list').html('<div class="loading-message">Failed to load saved sequences</div>');
+    }
+  });
+}
+
+// Load a saved sequence for editing
+$(document).on('click', '.saved-sequence-btn', function(e) {
+  // Don't trigger if clicking the delete button
+  if ($(e.target).hasClass('delete-sequence')) {
+    return;
+  }
+  
+  const sequenceName = $(this).data('sequence-name');
+  
+  if (currentSequence.length > 0 && !confirm('Replace current sequence with "' + sequenceName + '"?')) {
+    return;
+  }
+  
+  // Load the selected sequence
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_command' object.pk %}",
+    data: {
+      command: 'load_sequence',
+      sequence_name: sequenceName
+    },
+    dataType: 'json',
+    success: function(loadResponse) {
+      if (loadResponse.success) {
+        currentSequence = loadResponse.sequence.slice();
+        updateSequenceDisplay();
+        updateSequenceControls();
+        $('#sequence-name').val(sequenceName);
+        console.log('Loaded sequence:', sequenceName, 'with', currentSequence.length, 'items');
+      } else {
+        alert('Load failed: ' + loadResponse.message);
+      }
+    },
+    error: function() {
+      alert('Failed to load sequence!');
+    }
+  });
+});
+
+// Delete a saved sequence
+$(document).on('click', '.delete-sequence', function(e) {
+  e.stopPropagation();
+  
+  const sequenceName = $(this).data('sequence-name');
+  
+  if (!confirm('Delete sequence "' + sequenceName + '"? This cannot be undone.')) {
+    return;
+  }
+  
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:dj_command' object.pk %}",
+    data: {
+      command: 'delete_sequence',
+      sequence_name: sequenceName
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        alert('✓ Sequence "' + sequenceName + '" deleted successfully!');
+        loadSavedSequences(); // Refresh the list
+        
+        // Clear the name input if it matches the deleted sequence
+        if ($('#sequence-name').val() === sequenceName) {
+          $('#sequence-name').val('');
+        }
+      } else {
+        alert('Delete failed: ' + response.message);
+      }
+    },
+    error: function() {
+      alert('Failed to delete sequence!');
+    }
+  });
 });
 
 // Macro recording
@@ -727,6 +2082,13 @@ $(document).ready(function() {
   $(document).on('click', 'button', function(e) {
     console.log('Generic button click detected:', $(this).attr('class'), $(this).text());
   });
+  
+  // Auto-enable DJ mode when panel loads
+  console.log('Auto-enabling DJ mode...');
+  setDJMode(true);
+  
+  // Load saved sequences
+  loadSavedSequences();
   
   refreshDJStatus();
 });

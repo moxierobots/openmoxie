@@ -42,6 +42,9 @@ BEHAVIOR_COMMANDS = {
     'Bht_Wait_Hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
     'Bht_sigh_relief': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_sigh_relief+,   +Track+:++ }"/>',
     'Bht_yawn_big': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_yawn_big+,   +Track+:++ }"/>',
+    'bht_accept_hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+bht_accept_hug+,   +Track+:++ }"/>',
+    'bht_clearthroat': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+bht_clearthroat+,   +Track+:++ }"/>',
+    'Bht_Back_and_forth_arm_wave': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:3.0,   +repeat+:2,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Back_and_forth_arm_wave+,   +Track+:++ }"/>',
     # Add more behavioral commands as needed
 }
 
@@ -66,6 +69,9 @@ BEHAVIOR_PRESETS = {
         ('speak', {'text': "Let's get energized! Are you ready?", 'mood': 'excited', 'intensity': 0.8}),
         ('behavior', {'behavior_name': 'Bht_Vg_Oh_Eureka'}),
         ('behavior', {'behavior_name': 'Bht_Circle_motion'})
+    ],
+    'welcome_message': [
+        ('sequence', {'sequence_name': 'welcome_test'})
     ],
 }
 
@@ -101,3 +107,33 @@ def get_sound_effect_markup(sound_name: str, volume: float = 0.75) -> str:
     Generate sound effect markup
     """
     return f'<mark name="cmd:playaudio,data:{{+SoundToPlay+:+{sound_name}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:{volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}}"/>'
+
+
+def get_pause_markup(seconds: float = 1.0) -> str:
+    """
+    Generate pause markup for timing between sequences
+    """
+    return f'{{"break":{{"time":"{seconds}s"}}}}'
+
+
+def get_sequence_markup(sequence_name: str) -> str:
+    """
+    Generate complete sequence markup for predefined sequences
+    """
+    sequences = {
+        'welcome_test': create_welcome_test_sequence()
+    }
+    
+    return sequences.get(sequence_name, '')
+
+
+def create_welcome_test_sequence() -> str:
+    """
+    Create the welcome test sequence: wave -> clear throat -> welcome speech
+    """
+    # Use proper behavior markup format for telehealth
+    welcome_sequence = '''
+<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.5,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:true,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/> <break time="1s"/> <mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.5,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:true,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/> <break time="1s"/> Welcome my friends! Your love and stories make me so happy! <break time="1s"/> Now you can talk with me directly. I can't wait to see what you share with me!
+    '''.strip()
+    
+    return welcome_sequence
