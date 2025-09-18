@@ -12,3 +12,7 @@ site/work/**/*
 
 site/static/
 emqx/
+.DS_Store
+
+venv/
+

@@ -10,8 +10,8 @@ from .base import *
 DEBUG = True
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Even in development, require a proper secret key from environment
-SECRET_KEY = config('SECRET_KEY')
+# In development, we can use a default key, but it should be overridden in production
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-v&n3hpdmu^t0r^62+hj64&c$z8q3o2g9qby^x02jl8y8g@jmb@')
 
 ALLOWED_HOSTS = ['*']
 
@@ -35,13 +35,15 @@ INTERNAL_IPS = [
 # Allow all origins in development (configure properly in production)
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Database configuration for development - using SQLite
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Database configuration for development
+# Can be overridden with environment variables
+DATABASES['default'].update({
+    'HOST': config('DB_HOST', default='localhost'),
+    'PORT': config('DB_PORT', default=5432, cast=int),
+    'USER': config('DB_USER', default='openmoxie'),
+    'PASSWORD': config('DB_PASSWORD', default='openmoxie'),
+    'NAME': config('DB_NAME', default='openmoxie_dev'),
+})
 
 # Static files configuration for development
 STATICFILES_DIRS = [
