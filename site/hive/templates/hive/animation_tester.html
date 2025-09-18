@@ -1,0 +1,647 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="moxheader">
+  <a href="{% url 'hive:dashboard' %}">
+    <img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}">
+  </a>
+  Animation Tester - {{object.name}}<span class="moxversion">{{moxie_version}}</span>
+</div>
+
+<div class="animation-tester-container">
+  <div class="tester-header">
+    <div class="status-section">
+      <h3>Device Status</h3>
+      <div class="status-indicators">
+        <div class="status-item">
+          <span class="status-label">Connection:</span>
+          <span class="badge text-bg-success" id="device_status">Online</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Total Animations:</span>
+          <span class="badge text-bg-info">{{ total_animations }}</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Tested:</span>
+          <span class="badge text-bg-warning" id="tested_count">0</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Working:</span>
+          <span class="badge text-bg-success" id="working_count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="navigation-controls">
+        <button id="prev_animation" class="btn btn-secondary">⬅️ Previous</button>
+        <span id="current_position">1 / {{ total_animations }}</span>
+        <button id="next_animation" class="btn btn-secondary">➡️ Next</button>
+      </div>
+      <div class="jump-controls">
+        <label for="jump_to">Jump to Animation:</label>
+        <input type="number" id="jump_to" min="1" max="{{ total_animations }}" value="1">
+        <button id="jump_button" class="btn btn-primary">Go</button>
+      </div>
+      <div class="export-controls">
+        <button id="download_results" class="btn btn-success">📄 Download Results CSV</button>
+        <button id="clear_results" class="btn btn-danger">🗑️ Clear All Results</button>
+      </div>
+    </div>
+  </div>
+
+  {% if not has_uploaded_file %}
+  <div class="alert alert-warning text-center" role="alert">
+    <h4>No Animation CSV File Uploaded</h4>
+    <p>Please upload an animation CSV file from the dashboard to start testing.</p>
+    <a href="{% url 'hive:dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+  </div>
+  {% else %}
+  <div class="animation-card" id="animation_card">
+    <div class="animation-info">
+      <h4 class="animation-name" id="animation_name">Loading...</h4>
+      <div class="animation-details">
+        <div class="detail-item">
+          <strong>Function:</strong>
+          <span id="animation_function">-</span>
+        </div>
+        <div class="detail-item">
+          <strong>Notes:</strong>
+          <span id="animation_notes">-</span>
+        </div>
+        <div class="detail-item markup-preview">
+          <strong>Markup:</strong>
+          <div id="animation_markup" class="markup-text">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <div class="action-buttons">
+        <button id="send_to_robot" class="btn btn-primary btn-lg">🤖 Send to Robot</button>
+      </div>
+      
+      <div class="result-buttons">
+        <h5>Did it work?</h5>
+        <div class="result-options">
+          <button id="mark_yes" class="btn btn-success result-btn">✅ YES</button>
+          <button id="mark_no" class="btn btn-danger result-btn">❌ NO</button>
+          <button id="clear_mark" class="btn btn-secondary result-btn">🔄 Clear</button>
+        </div>
+        <div id="current_result" class="current-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <h5>Progress Overview</h5>
+    <div class="progress-bar">
+      <div id="progress_fill" class="progress-fill"></div>
+    </div>
+    <div class="progress-stats">
+      <span>Tested: <span id="progress_tested">0</span> / {{ total_animations }}</span>
+      <span>Working: <span id="progress_working">0</span></span>
+      <span>Not Working: <span id="progress_not_working">0</span></span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.animation-tester-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+  min-height: 100vh;
+  color: #ffffff;
+}
+
+.tester-header {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  border: 1px solid #333;
+}
+
+.status-section h3 {
+  color: #ff6b6b;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.status-indicators {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+.status-label {
+  font-weight: bold;
+  color: #ccc;
+}
+
+.control-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.navigation-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
+}
+
+.jump-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.jump-controls input {
+  width: 80px;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #3a3a3a;
+  color: white;
+  text-align: center;
+}
+
+.export-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.animation-card {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border-radius: 15px;
+  padding: 30px;
+  margin-bottom: 20px;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  border: 1px solid #333;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+.animation-info h4 {
+  color: #4ecdc4;
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  border-bottom: 2px solid #4ecdc4;
+  padding-bottom: 10px;
+}
+
+.animation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.detail-item {
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  border-left: 4px solid #4ecdc4;
+}
+
+.detail-item strong {
+  color: #ff6b6b;
+  margin-right: 10px;
+}
+
+.markup-preview {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.markup-text {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 4px;
+  color: #a8e6cf;
+  margin-top: 5px;
+  word-break: break-all;
+}
+
+.test-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  align-items: center;
+}
+
+.action-buttons {
+  text-align: center;
+}
+
+.result-buttons {
+  text-align: center;
+}
+
+.result-buttons h5 {
+  color: #ff6b6b;
+  margin-bottom: 15px;
+}
+
+.result-options {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.result-btn {
+  min-width: 100px;
+  font-weight: bold;
+}
+
+.current-result {
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.current-result.yes {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid #28a745;
+}
+
+.current-result.no {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.progress-section {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  border: 1px solid #333;
+}
+
+.progress-section h5 {
+  color: #ff6b6b;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.progress-bar {
+  height: 20px;
+  background: #1a1a1a;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  border: 1px solid #333;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #44b3a8);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  font-size: 14px;
+}
+
+.progress-stats span {
+  color: #ccc;
+}
+
+@media (max-width: 1000px) {
+  .animation-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .control-panel {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .status-indicators {
+    grid-template-columns: 1fr;
+  }
+  
+  .result-options {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>
+
+<script>
+{% if has_uploaded_file %}
+let animations = [];
+let currentIndex = 0;
+let results = {};
+
+// Initialize the interface
+$(document).ready(function() {
+  loadAnimations();
+  loadResults();
+  refreshStatus();
+  setInterval(refreshStatus, 5000); // Refresh status every 5 seconds
+});
+
+// Load animations via AJAX to avoid XSS
+function loadAnimations() {
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:animation_api' object.pk %}",
+    data: {'command': 'get_animations'},
+    dataType: 'json',
+    success: function(response) {
+      animations = response.animations || [];
+      displayCurrentAnimation();
+    },
+    error: function() {
+      console.error('Failed to load animations');
+      $('#animation_name').text('Failed to load animations');
+    }
+  });
+}
+
+// Load existing results from server
+function loadResults() {
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:animation_api' object.pk %}",
+    data: {'command': 'get_results'},
+    dataType: 'json',
+    success: function(response) {
+      results = response.results || {};
+      updateProgressDisplay();
+    }
+  });
+}
+
+// Refresh device status
+function refreshStatus() {
+  $.ajax({
+    type: 'GET',
+    url: "{% url 'hive:animation_api' object.pk %}",
+    dataType: "json"
+  }).done(function(data) {
+    if (data.online) {
+      $("#device_status")
+        .removeClass("text-bg-danger")
+        .addClass("text-bg-success")
+        .text("Online");
+    } else {
+      $("#device_status")
+        .removeClass("text-bg-success")
+        .addClass("text-bg-danger")
+        .text("Offline");
+    }
+  });
+}
+
+// Display current animation details
+function displayCurrentAnimation() {
+  if (animations.length === 0) {
+    $('#animation_name').text('No animations loaded');
+    return;
+  }
+  
+  const animation = animations[currentIndex];
+  $('#animation_name').text(animation.file_name);
+  $('#animation_function').text(animation.function || '-');
+  $('#animation_notes').text(animation.notes || '-');
+  $('#animation_markup').text(animation.markup || '-');
+  $('#current_position').text(`${currentIndex + 1} / ${animations.length}`);
+  $('#jump_to').val(currentIndex + 1);
+  
+  // Update result display
+  const animationId = animation.id.toString();
+  const result = results[animationId];
+  const resultDiv = $('#current_result');
+  
+  if (result === 'yes') {
+    resultDiv.removeClass('no').addClass('yes').text('✅ Marked as WORKING');
+  } else if (result === 'no') {
+    resultDiv.removeClass('yes').addClass('no').text('❌ Marked as NOT WORKING');
+  } else {
+    resultDiv.removeClass('yes no').text('Not tested yet');
+  }
+}
+
+// Update progress statistics
+function updateProgressDisplay() {
+  const testedCount = Object.keys(results).length;
+  const workingCount = Object.values(results).filter(r => r === 'yes').length;
+  const notWorkingCount = Object.values(results).filter(r => r === 'no').length;
+  
+  $('#tested_count').text(testedCount);
+  $('#working_count').text(workingCount);
+  $('#progress_tested').text(testedCount);
+  $('#progress_working').text(workingCount);
+  $('#progress_not_working').text(notWorkingCount);
+  
+  // Update progress bar
+  const progressPercent = animations.length > 0 ? (testedCount / animations.length) * 100 : 0;
+  $('#progress_fill').css('width', `${progressPercent}%`);
+}
+
+// Send animation to robot
+function sendAnimationToRobot() {
+  const animation = animations[currentIndex];
+  
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:animation_api' object.pk %}",
+    data: {
+      'command': 'test_animation',
+      'animation_name': animation.file_name,
+      'markup': animation.markup
+    },
+    dataType: 'json',
+    success: function(response) {
+      console.log('Animation sent:', response);
+      // Visual feedback
+      const btn = $('#send_to_robot');
+      const originalText = btn.text();
+      btn.text('✅ Sent!').prop('disabled', true);
+      setTimeout(() => {
+        btn.text(originalText).prop('disabled', false);
+      }, 2000);
+    },
+    error: function(xhr, status, error) {
+      console.error('Failed to send animation:', error);
+      alert('Failed to send animation: ' + error);
+    }
+  });
+}
+
+// Mark test result
+function markResult(result) {
+  const animation = animations[currentIndex];
+  const animationId = animation.id.toString();
+  
+  if (result === 'clear') {
+    delete results[animationId];
+  } else {
+    results[animationId] = result;
+  }
+  
+  let command, requestData;
+  if (result === 'clear') {
+    command = 'clear_single_result';
+    requestData = {
+      'command': command,
+      'animation_id': animationId
+    };
+  } else {
+    command = 'mark_result';
+    requestData = {
+      'command': command,
+      'animation_id': animationId,
+      'result': result
+    };
+  }
+  
+  $.ajax({
+    type: 'POST',
+    url: "{% url 'hive:animation_api' object.pk %}",
+    data: requestData,
+    dataType: 'json',
+    success: function(response) {
+      console.log('Result saved:', response);
+      displayCurrentAnimation();
+      updateProgressDisplay();
+    },
+    error: function(xhr, status, error) {
+      console.error('Failed to save result:', error);
+    }
+  });
+}
+
+// Navigation functions
+function nextAnimation() {
+  if (currentIndex < animations.length - 1) {
+    currentIndex++;
+    displayCurrentAnimation();
+  }
+}
+
+function prevAnimation() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    displayCurrentAnimation();
+  }
+}
+
+function jumpToAnimation() {
+  const jumpTo = parseInt($('#jump_to').val()) - 1;
+  if (jumpTo >= 0 && jumpTo < animations.length) {
+    currentIndex = jumpTo;
+    displayCurrentAnimation();
+  }
+}
+
+function downloadResults() {
+  window.open("{% url 'hive:animation_results' object.pk %}", '_blank');
+}
+
+function clearAllResults() {
+  if (confirm('Are you sure you want to clear all test results?')) {
+    results = {};
+    $.ajax({
+      type: 'POST',
+      url: "{% url 'hive:animation_api' object.pk %}",
+      data: {'command': 'clear_results'},
+      dataType: 'json',
+      success: function(response) {
+        console.log('Results cleared:', response);
+        displayCurrentAnimation();
+        updateProgressDisplay();
+      }
+    });
+  }
+}
+
+// Event handlers
+$('#send_to_robot').on('click', sendAnimationToRobot);
+$('#mark_yes').on('click', () => markResult('yes'));
+$('#mark_no').on('click', () => markResult('no'));
+$('#clear_mark').on('click', () => markResult('clear'));
+$('#next_animation').on('click', nextAnimation);
+$('#prev_animation').on('click', prevAnimation);
+$('#jump_button').on('click', jumpToAnimation);
+$('#download_results').on('click', downloadResults);
+$('#clear_results').on('click', clearAllResults);
+
+// Keyboard shortcuts
+$(document).on('keydown', function(e) {
+  // Don't trigger when typing in input fields
+  if ($(e.target).is('input, textarea')) return;
+  
+  switch(e.key) {
+    case 'ArrowLeft':
+      e.preventDefault();
+      prevAnimation();
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      nextAnimation();
+      break;
+    case ' ':
+      e.preventDefault();
+      sendAnimationToRobot();
+      break;
+    case 'y':
+    case 'Y':
+      e.preventDefault();
+      markResult('yes');
+      break;
+    case 'n':
+    case 'N':
+      e.preventDefault();
+      markResult('no');
+      break;
+  }
+});
+
+// Jump to animation on Enter key in input
+$('#jump_to').on('keypress', function(e) {
+  if (e.which === 13) {
+    jumpToAnimation();
+  }
+});
+{% endif %}
+</script>
+
+{% endblock %}

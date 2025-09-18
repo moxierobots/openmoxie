@@ -18,12 +18,12 @@ RUN apt-get update && apt-get install -y \
 # Install dependencies using lockfile
 COPY pyproject.toml uv.lock /app/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --no-dev
+    uv sync --no-install-project --no-dev
 
 # Copy the source code
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+    uv sync --no-dev
 
 # Final stage - clean image without uv
 FROM python:3.12-slim-bookworm
@@ -49,7 +49,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # Ensure permissions for site/work directory
-RUN mkdir -p /app/site/work && chmod -R 777 /app/site/work
+RUN mkdir -p /app/site/work && chmod -R 755 /app/site/work
 
 # Create static and media directories with proper permissions
 RUN mkdir -p /var/www/openmoxie/static /var/www/openmoxie/media && \

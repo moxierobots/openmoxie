@@ -1,3 +1,4 @@
+import os
 from time import sleep
 from django.core.management.commands.runserver import Command as RunserverCommand
 from django.core.management import call_command
@@ -8,9 +9,12 @@ from hive.mqtt.moxie_server import create_service_instance, cleanup_instance
 class Command(RunserverCommand):
     _run_enabled = True
     def handle(self, *args, **options):
-        thread = threading.Thread(target=self.deamon_worker)
-        thread.daemon = True  # Set as daemon thread so it exits when main thread exits
-        thread.start()
+        if os.environ.get('SKIP_MQTT', 'false').lower() in {'1', 'true', 'yes'}:
+            print('Skipping MQTT Services startup (SKIP_MQTT set)')
+        else:
+            thread = threading.Thread(target=self.deamon_worker)
+            thread.daemon = True  # Set as daemon thread so it exits when main thread exits
+            thread.start()
 
         # Call the base handle method to start the development server
         super().handle(*args, **options)

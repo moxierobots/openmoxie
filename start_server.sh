@@ -37,7 +37,7 @@ if [ ! -d "work" ]; then
     print_status "Creating work directory..."
     mkdir -p work
 fi
-chmod -R 777 work
+chmod -R 755 work
 
 # Run database migrations
 print_status "Running database migrations..."
@@ -73,7 +73,7 @@ if [ ! -z "$STATIC_ROOT" ]; then
     chmod -R 755 "$STATIC_ROOT" 2>/dev/null || true
 else
     # Default static root location
-    DEFAULT_STATIC_ROOT="/app/site/static"
+    DEFAULT_STATIC_ROOT="site/static"
     print_status "No STATIC_ROOT set, using default: $DEFAULT_STATIC_ROOT"
     mkdir -p "$DEFAULT_STATIC_ROOT"
     chmod -R 755 "$DEFAULT_STATIC_ROOT" 2>/dev/null || true
@@ -107,7 +107,7 @@ print_status "Health check available at http://0.0.0.0:8000/health"
 if [ ! -d "work/logs" ]; then
     print_status "Creating logs directory..."
     mkdir -p work/logs
-    chmod -R 777 work/logs
+    chmod -R 755 work/logs
 fi
 
 exec gunicorn \
