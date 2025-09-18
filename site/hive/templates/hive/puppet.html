@@ -91,12 +91,9 @@
   function set_puppet_state(val) {
     $.ajax({
         type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
+        url: "{% url 'hive:puppet_api_safe' object.pk %}",
         data: {'command': val ? "enable" : "disable" },
-        dataType: 'json',
-        beforeSend: function(xhr, settings) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
+        dataType: 'json'
     }).always(function() {
       window.setTimeout("refresh_view()", 1);
     });
@@ -109,15 +106,14 @@ function puppet_speak(speech, mood, intensity, markup) {
       'mood': mood,
       'intensity': intensity
     };
-    
+
     if (markup) {
       postData['markup'] = markup;
     }
-    
-    // Use the new CSRF-exempt endpoint for commands
+
     $.ajax({
         type: 'POST',
-        url: "{% url 'hive:puppet_command' object.pk %}", 
+        url: "{% url 'hive:puppet_command_safe' object.pk %}",
         data: postData,
         dataType: 'json'
       })
@@ -138,7 +134,7 @@ function puppet_interrupt() {
     console.log("Interrupting Moxie");
     $.ajax({
         type: 'POST',
-        url: "{% url 'hive:puppet_command' object.pk %}", 
+        url: "{% url 'hive:puppet_command_safe' object.pk %}",
         data: { 'command': "interrupt" },
         dataType: 'json'
       })
@@ -153,7 +149,7 @@ function puppet_interrupt() {
   function refresh_view() {
     $.ajax({
         type: 'GET',
-        url: "{% url 'hive:puppet_api' object.pk %}",
+        url: "{% url 'hive:puppet_api_safe' object.pk %}",
         dataType: "json"
     }).done(function(data, textStatus, jqXHR) {
         console.log(data);
@@ -213,11 +209,11 @@ function puppet_interrupt() {
 
     $('#chat_form').submit(function(e) {
       e.preventDefault(); // Prevent form submission
-      
+
       var useMarkup = $('#use_markup').is(':checked');
       var speech = $('#user_input').val().trim();
       var markup = $('#markup_input').val().trim();
-      
+
       if (useMarkup) {
         if (!markup) {
           alert('Please enter some markup to send.');

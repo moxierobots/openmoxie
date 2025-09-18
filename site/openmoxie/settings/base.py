@@ -5,6 +5,8 @@ This file contains settings common to all environments.
 Environment-specific settings should be defined in their respective files.
 """
 
+import logging
+import os
 from pathlib import Path
 from decouple import config
 import sentry_sdk
@@ -14,10 +16,14 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 # Environment validation
 try:
     from hive.env_validator import run_startup_validation
-    # Only run validation if not in migration or collectstatic
+    # Only run validation if not in migration or collectstatic, unless explicitly skipped
     import sys
-    if 'migrate' not in sys.argv and 'makemigrations' not in sys.argv and 'collectstatic' not in sys.argv:
+
+    skip_validation = os.environ.get('SKIP_ENV_VALIDATION', 'false').lower() in {'1', 'true', 'yes'}
+    if not skip_validation and 'migrate' not in sys.argv and 'makemigrations' not in sys.argv and 'collectstatic' not in sys.argv:
         run_startup_validation()
+    elif skip_validation:
+        logging.getLogger(__name__).info('Skipping environment validation because SKIP_ENV_VALIDATION is set')
 except ImportError:
     # During initial setup, hive app might not be available yet
     pass

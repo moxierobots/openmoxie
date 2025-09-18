@@ -25,9 +25,11 @@ from .validators import (
     sanitize_input, validate_device_name, ValidationError as CustomValidationError
 )
 from .auth_utils import require_api_key, rate_limit
-from .behavior_config import (get_behavior_markup, get_quick_action_behavior, 
+from .behavior_config import (get_behavior_markup, get_quick_action_behavior,
                               get_preset_actions, get_sound_effect_markup,
                               get_sequence_markup)
+from .dj_mix_config import (DJ_MIX_COMMANDS, DJ_MIX_CATEGORIES,
+                            generate_dj_mix_markup, get_dj_mix_command_info)
 import json
 import uuid
 import logging
@@ -74,28 +76,28 @@ class SetupView(generic.TemplateView):
 @require_http_methods(["POST"])
 def hive_configure(request):
     cfg = HiveConfiguration.get_current()
-    
+
     try:
         # Validate and sanitize OpenAI API key
         openai = sanitize_input(request.POST.get('apikey', ''), max_length=100)
         if openai:
             validate_openai_api_key(openai)
             cfg.openai_api_key = openai
-        
+
         # Validate and process Google API key
         google = sanitize_input(request.POST.get('googleapikey', ''), max_length=10000)
         if google:
             parsed_google = validate_google_api_key(google)
             # Moxie likes compact json, so rewrite json input to be safe
             cfg.google_api_key = json.dumps(parsed_google, separators=(',', ':'))
-        
+
         # Validate hostname
         hostname = sanitize_input(request.POST.get('hostname', ''), max_length=255)
         validate_hostname(hostname)
         cfg.external_host = hostname
-        
+
         cfg.allow_unverified_bots = request.POST.get('allowall') == "on"
-        
+
     except CustomValidationError as e:
         logger.error(f"Validation error in hive configuration: {str(e)}")
         return redirect('hive:setup', alert_message=f'Configuration error: {str(e)}')
@@ -134,34 +136,34 @@ class DashboardView(generic.TemplateView):
         alert_message = kwargs.get('alert_message', None)
         if alert_message:
             context['alert'] = alert_message
-        
+
         # Paginate devices
         devices_list = MoxieDevice.objects.select_related('schedule').order_by('-last_connect')
         devices_paginator = Paginator(devices_list, 10)  # 10 devices per page
         devices_page = self.request.GET.get('devices_page', 1)
-        
+
         try:
             context['recent_devices'] = devices_paginator.page(devices_page)
         except PageNotAnInteger:
             context['recent_devices'] = devices_paginator.page(1)
         except EmptyPage:
             context['recent_devices'] = devices_paginator.page(devices_paginator.num_pages)
-        
+
         # Paginate conversations
         conversations_list = SinglePromptChat.objects.order_by('name')
         conv_paginator = Paginator(conversations_list, 5)  # 5 conversations per page
         conv_page = self.request.GET.get('conv_page', 1)
-        
+
         try:
             context['conversations'] = conv_paginator.page(conv_page)
         except PageNotAnInteger:
             context['conversations'] = conv_paginator.page(1)
         except EmptyPage:
             context['conversations'] = conv_paginator.page(conv_paginator.num_pages)
-        
+
         context['schedules'] = MoxieSchedule.objects.all()  # Keep schedules unpaginated for now
         context['live'] = get_instance().robot_data().connected_list()
-        
+
         return context
 
 # INTERACT - Chat with a remote conversation
@@ -240,24 +242,24 @@ class MoxieView(generic.DetailView):
 def moxie_edit(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
-        
+
         # Validate and sanitize inputs
         moxie_name = sanitize_input(request.POST.get("moxie_name", ""), max_length=200)
         validate_device_name(moxie_name)
-        
+
         # Validate numeric inputs
         try:
             screen_brightness = float(request.POST.get("screen_brightness", 0.5))
             if not (0.0 <= screen_brightness <= 1.0):
                 raise ValueError("Screen brightness must be between 0.0 and 1.0")
-                
+
             audio_volume = float(request.POST.get("audio_volume", 0.5))
             if not (0.0 <= audio_volume <= 1.0):
                 raise ValueError("Audio volume must be between 0.0 and 1.0")
         except (ValueError, TypeError) as e:
             logger.warning(f"Invalid numeric value in moxie_edit: {str(e)}")
             return redirect('hive:dashboard_alert', alert_message=f'Invalid input: {str(e)}')
-        
+
         # Validate schedule
         schedule_pk = request.POST.get("schedule")
         if schedule_pk:
@@ -268,38 +270,38 @@ def moxie_edit(request, pk):
                 return redirect('hive:dashboard_alert', alert_message='Invalid schedule selected')
         else:
             schedule = None
-        
+
         # Validate nickname
         nickname = sanitize_input(request.POST.get("nickname", ""), max_length=50)
-        
+
         # Validate pairing status
         pairing_status = request.POST.get("pairing_status", "paired")
         if pairing_status not in ["paired", "unpairing"]:
             pairing_status = "paired"
-        
+
         # Apply changes to base model
         device.name = moxie_name
         device.schedule = schedule
-        
+
         # Apply changes to json field inside config
         if device.robot_config is None:
             # robot_config optional, create a new one to hold these
             device.robot_config = {}
-        
+
         device.robot_config["screen_brightness"] = screen_brightness
         device.robot_config["audio_volume"] = audio_volume
-        
+
         if "child_pii" in device.robot_config:
             device.robot_config["child_pii"]["nickname"] = nickname
         else:
             device.robot_config["child_pii"] = {"nickname": nickname}
-        
+
         # pairing/unpairing
         device.robot_config["pairing_status"] = pairing_status
-        
+
         device.save()
         get_instance().handle_config_updated(device)
-        
+
     except CustomValidationError as e:
         logger.warning(f"Validation error in moxie_edit for pk {pk}: {str(e)}")
         return redirect('hive:dashboard_alert', alert_message=f'Validation error: {str(e)}')
@@ -309,7 +311,7 @@ def moxie_edit(request, pk):
     except Exception as e:
         logger.error(f"Unexpected error in moxie_edit for pk {pk}: {str(e)}")
         return redirect('hive:dashboard_alert', alert_message='An error occurred while updating the device')
-    
+
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
 # MOXIE - Edit Moxie Face Customizations
@@ -360,26 +362,27 @@ class MoxiePuppetView(generic.DetailView):
     model = MoxieDevice
 
 # Simple puppet command endpoint for testing
-@csrf_exempt 
+@csrf_exempt
 def puppet_command(request, pk):
-    """Simple endpoint to send puppet commands without CSRF issues"""
+    """Simple endpoint to send puppet commands"""
+    print(f"DEBUG: puppet_command called with method {request.method}")
     if request.method != 'POST':
         return HttpResponseBadRequest('POST required')
-    
+
     try:
         device = MoxieDevice.objects.get(pk=pk)
         command = request.POST.get('command')
-        
+
         if command == 'speak':
             speech = request.POST.get('speech', '')
             mood = request.POST.get('mood', 'neutral')
             intensity = float(request.POST.get('intensity', '0.5'))
-            
+
             server = get_instance()
             result = server.send_telehealth_speech(device.device_id, speech, mood, intensity)
-            
+
             return JsonResponse({
-                'result': 'success', 
+                'result': 'success',
                 'message': f'Sent speech command: {speech}',
                 'device': device.device_id
             })
@@ -389,14 +392,14 @@ def puppet_command(request, pk):
             return JsonResponse({'result': 'success', 'message': 'Sent interrupt command'})
         else:
             return JsonResponse({'result': 'error', 'message': f'Unknown command: {command}'})
-            
+
     except MoxieDevice.DoesNotExist:
         return JsonResponse({'result': 'error', 'message': 'Device not found'})
     except Exception as e:
         return JsonResponse({'result': 'error', 'message': str(e)})
 
 # PUPPET API - Handle AJAX calls from puppet view
-# Note: CSRF exempted for puppet mode functionality
+# Standard CSRF protection applies for session-based requests
 @csrf_exempt
 def puppet_api(request, pk):
     try:
@@ -591,45 +594,45 @@ def public_markup_api(request):
     try:
         # Parse JSON request
         data = json.loads(request.body.decode('utf-8'))
-        
+
         # Validate required fields
         if 'text' not in data:
             return JsonResponse({
                 'error': 'Missing required field: text'
             }, status=400)
-        
+
         text = data['text']
         if not text or not isinstance(text, str):
             return JsonResponse({
                 'error': 'Text field must be a non-empty string'
             }, status=400)
-        
+
         # Extract optional mood and intensity parameters
         mood = data.get('mood')
         intensity = data.get('intensity')
         mood_and_intensity = None
-        
+
         if mood is not None:
             if not isinstance(mood, str):
                 return JsonResponse({
                     'error': 'Mood must be a string'
                 }, status=400)
-            
+
             # Default intensity to 0.5 if mood is provided but intensity is not
             if intensity is None:
                 intensity = 0.5
-            
+
             if not isinstance(intensity, (int, float)) or intensity < 0 or intensity > 1:
                 return JsonResponse({
                     'error': 'Intensity must be a number between 0 and 1'
                 }, status=400)
-            
+
             mood_and_intensity = (mood, float(intensity))
-        
+
         # Process the text through automarkup
         rules = get_automarkup_rules()
         markup_result = automarkup_process(text, rules, mood_and_intensity=mood_and_intensity)
-        
+
         # Return the result
         return JsonResponse({
             'text': text,
@@ -637,7 +640,7 @@ def public_markup_api(request):
             'mood': mood,
             'intensity': intensity
         })
-        
+
     except json.JSONDecodeError:
         return JsonResponse({
             'error': 'Invalid JSON in request body'
@@ -655,20 +658,20 @@ class MoxieDJPanelView(generic.DetailView):
 
 # DJ PANEL API - Handle AJAX calls from DJ panel
 # Note: This uses Django's default CSRF protection for session-based requests
-# Simple DJ command endpoint for testing without CSRF issues
-@csrf_exempt 
+# Simple DJ command endpoint for testing
+@csrf_exempt
 def dj_command(request, pk):
-    """Simple endpoint to send DJ commands without CSRF issues"""
-    import json  # Move json import to function level
-    
+    """Simple endpoint to send DJ commands"""
+    print(f"DEBUG: dj_command called with method {request.method}")
     if request.method != 'POST':
         return HttpResponseBadRequest('POST required')
-    
+
     try:
         device = MoxieDevice.objects.get(pk=pk)
-        
+
         # Handle both form data and JSON data
-        if request.content_type == 'application/json':
+        content_type = request.content_type or ''
+        if content_type.startswith('application/json'):
             logger.info(f"Parsing JSON request body: {request.body}")
             data = json.loads(request.body)
             cmd = data.get('command')
@@ -677,10 +680,10 @@ def dj_command(request, pk):
             data = request.POST
             cmd = request.POST.get('command')
             logger.info(f"Extracted command from POST: {cmd}")
-        
+
         if not device.robot_config:
             device.robot_config = {}
-        
+
         if cmd == "enable":
             device.robot_config["moxie_mode"] = "TELEHEALTH"
             device.save()
@@ -713,6 +716,19 @@ def dj_command(request, pk):
         elif cmd == "preset":
             preset_name = data.get('preset_name')
             dj_handle_preset(device.device_id, preset_name)
+        elif cmd == "custom_markup":
+            markup = data.get('markup')
+            if not markup:
+                return JsonResponse({'result': 'error', 'message': 'No markup provided for custom command'}, status=400)
+            logger.info(f"Sending custom markup command for device {device.device_id}")
+            get_instance().send_telehealth_markup(device.device_id, markup)
+        elif cmd == "set_emotion":
+            mood = data.get('mood', 'neutral')
+            intensity = float(data.get('intensity', 0.5))
+            # Apply emotion state to robot
+            logger.info(f"Setting emotion for device {device.device_id}: mood={mood}, intensity={intensity}")
+            # Send a minimal speech with the emotion settings to update robot's emotional state
+            get_instance().send_telehealth_speech(device.device_id, " ", mood, intensity)
         elif cmd == "sequence":
             sequence_name = data.get('sequence_name')
             dj_handle_sequence(device.device_id, sequence_name)
@@ -746,21 +762,35 @@ def dj_command(request, pk):
             else:
                 macro_actions = macro_actions_raw or []
             dj_handle_play_macro(device.device_id, macro_actions)
+        elif cmd == "repeated_behavior":
+            behavior_name = data.get('behavior_name')
+            duration_seconds = int(data.get('duration_seconds', 60))
+            if not behavior_name:
+                return JsonResponse({'result': 'error', 'message': 'No behavior name provided for repeated behavior'}, status=400)
+            dj_handle_repeated_behavior(device.device_id, behavior_name, duration_seconds)
         elif cmd == "delete_sequence":
             sequence_name = data.get('sequence_name')
             result = dj_delete_sequence(device, sequence_name)
             return JsonResponse(result)
+        elif cmd == "laugh_60s":
+            dj_handle_laugh_60_seconds(device.device_id)
+        elif cmd == "dj_mix":
+            mix_command_key = data.get('mix_command_key')
+            if mix_command_key not in DJ_MIX_COMMANDS:
+                return JsonResponse({'result': 'error', 'message': f'Unknown DJ MIX command: {mix_command_key}'}, status=400)
+            dj_handle_mix_command(device.device_id, mix_command_key)
         else:
             return JsonResponse({'result': 'error', 'message': f'Unknown command: {cmd}'})
-            
+
         return JsonResponse({'result': 'success', 'message': f'Executed command: {cmd}'})
-        
+
     except MoxieDevice.DoesNotExist:
         return JsonResponse({'result': 'error', 'message': 'Device not found'})
     except Exception as e:
         logger.error(f"Error in DJ command API: {str(e)}")
         return JsonResponse({'result': 'error', 'message': str(e)})
 
+@csrf_exempt
 def dj_panel_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
@@ -776,9 +806,9 @@ def dj_panel_api(request, pk):
             # Handle DJ command requests
             if not device.robot_config:
                 device.robot_config = {}
-            
+
             cmd = request.POST['command']
-            
+
             if cmd == "enable":
                 device.robot_config["moxie_mode"] = "TELEHEALTH"
                 device.save()
@@ -811,6 +841,19 @@ def dj_panel_api(request, pk):
             elif cmd == "preset":
                 preset_name = request.POST.get('preset_name')
                 dj_handle_preset(device.device_id, preset_name)
+            elif cmd == "custom_markup":
+                markup = request.POST.get('markup')
+                if not markup:
+                    return JsonResponse({'result': 'error', 'message': 'No markup provided for custom command'}, status=400)
+                logger.info(f"Sending custom markup command for device {device.device_id}")
+                get_instance().send_telehealth_markup(device.device_id, markup)
+            elif cmd == "set_emotion":
+                mood = request.POST.get('mood', 'neutral')
+                intensity = float(request.POST.get('intensity', 0.5))
+                # Apply emotion state to robot
+                logger.info(f"Setting emotion for device {device.device_id}: mood={mood}, intensity={intensity}")
+                # Send a minimal speech with the emotion settings to update robot's emotional state
+                get_instance().send_telehealth_speech(device.device_id, " ", mood, intensity)
             elif cmd == "sequence":
                 sequence_name = request.POST.get('sequence_name')
                 dj_handle_sequence(device.device_id, sequence_name)
@@ -836,7 +879,7 @@ def dj_panel_api(request, pk):
                 sequence_name = request.POST.get('sequence_name')
                 result = dj_delete_sequence(device, sequence_name)
                 return JsonResponse(result)
-                
+
         return JsonResponse({'result': True})
     except MoxieDevice.DoesNotExist as e:
         logger.warning(f"Moxie DJ panel for unfound pk {pk}")
@@ -857,6 +900,252 @@ def dj_handle_behavior(device_id, behavior_name):
     markup = get_behavior_markup(behavior_name)
     get_instance().send_telehealth_markup(device_id, markup)
 
+def dj_handle_mix_command(device_id, mix_command_key):
+    """Handle DJ MIX commands - combined audio + dance behavior"""
+    markup = generate_dj_mix_markup(mix_command_key)
+    if markup:
+        logger.info(f"Sending DJ MIX command '{mix_command_key}' to device {device_id}")
+        get_instance().send_telehealth_markup(device_id, markup)
+    else:
+        logger.error(f"Failed to generate markup for DJ MIX command: {mix_command_key}")
+
+# CSRF-EXEMPT SAFE ENDPOINTS - These bypass CSRF protection for working commands
+
+@csrf_exempt
+def puppet_api_safe(request, pk):
+    """CSRF-exempt puppet API endpoint"""
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        if request.method == 'GET':
+            result = {
+                "online": get_instance().robot_data().device_online(device.device_id),
+                "puppet_state": get_instance().robot_data().get_puppet_state(device.device_id),
+                "puppet_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False
+            }
+            return JsonResponse(result)
+        elif request.method == 'POST':
+            command = request.POST.get('command')
+            if command == 'enable':
+                # Enable puppet mode
+                config = device.robot_config or {}
+                config['moxie_mode'] = 'TELEHEALTH'
+                device.robot_config = config
+                device.save()
+                get_instance().handle_config_updated(device)
+                return JsonResponse({'result': 'success', 'message': 'Puppet mode enabled'})
+            elif command == 'disable':
+                # Disable puppet mode
+                config = device.robot_config or {}
+                config.pop('moxie_mode', None)
+                device.robot_config = config
+                device.save()
+                get_instance().handle_config_updated(device)
+                return JsonResponse({'result': 'success', 'message': 'Puppet mode disabled'})
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
+@csrf_exempt
+def puppet_command_safe(request, pk):
+    """CSRF-exempt puppet command endpoint"""
+    print(f"DEBUG: puppet_command_safe called with method {request.method}")
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        command = request.POST.get('command')
+
+        if command == 'speak':
+            speech = request.POST.get('speech', '')
+            mood = request.POST.get('mood', 'neutral')
+            intensity = float(request.POST.get('intensity', '0.5'))
+
+            server = get_instance()
+            result = server.send_telehealth_speech(device.device_id, speech, mood, intensity)
+
+            return JsonResponse({
+                'result': 'success',
+                'message': f'Sent speech command: {speech}',
+                'device': device.device_id
+            })
+        elif command == 'interrupt':
+            server = get_instance()
+            server.send_telehealth_interrupt(device.device_id)
+            return JsonResponse({'result': 'success', 'message': 'Sent interrupt command'})
+        else:
+            return JsonResponse({'result': 'error', 'message': f'Unknown command: {command}'})
+
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
+@csrf_exempt
+def dj_api_safe(request, pk):
+    """CSRF-exempt DJ panel API endpoint"""
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        if request.method == 'GET':
+            result = {
+                "online": get_instance().robot_data().device_online(device.device_id),
+                "dj_state": get_instance().robot_data().get_puppet_state(device.device_id),
+                "dj_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False
+            }
+            return JsonResponse(result)
+        elif request.method == 'POST':
+            command = request.POST.get('command')
+            if command == 'enable':
+                config = device.robot_config or {}
+                config['moxie_mode'] = 'TELEHEALTH'
+                device.robot_config = config
+                device.save()
+                get_instance().handle_config_updated(device)
+                return JsonResponse({'result': 'success', 'message': 'DJ mode enabled'})
+            elif command == 'disable':
+                config = device.robot_config or {}
+                config.pop('moxie_mode', None)
+                device.robot_config = config
+                device.save()
+                get_instance().handle_config_updated(device)
+                return JsonResponse({'result': 'success', 'message': 'DJ mode disabled'})
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
+@csrf_exempt
+def dj_command_safe(request, pk):
+    """CSRF-exempt DJ command endpoint"""
+    print(f"DEBUG: dj_command_safe called with method {request.method}")
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+
+        # Handle both form data and JSON data
+        content_type = request.content_type or ''
+        if content_type.startswith('application/json'):
+            logger.info(f"Parsing JSON request body: {request.body}")
+            data = json.loads(request.body)
+            cmd = data.get('command')
+            logger.info(f"Extracted command from JSON: {cmd}")
+        else:
+            data = request.POST
+            cmd = request.POST.get('command')
+            logger.info(f"Extracted command from POST: {cmd}")
+
+        if not device.robot_config:
+            device.robot_config = {}
+
+        if cmd == "enable":
+            device.robot_config["moxie_mode"] = "TELEHEALTH"
+            device.save()
+            get_instance().handle_config_updated(device)
+        elif cmd == "disable":
+            device.robot_config.pop("moxie_mode", None)
+            device.save()
+            get_instance().handle_config_updated(device)
+        elif cmd == "interrupt":
+            get_instance().send_telehealth_interrupt(device.device_id)
+        elif cmd == "speak":
+            text = data.get('text', '')
+            markup = data.get('markup', '')
+            if markup:
+                get_instance().send_telehealth_markup(device.device_id, markup, text)
+            else:
+                mood = data.get('mood', 'neutral')
+                intensity = float(data.get('intensity', 0.5))
+                get_instance().send_telehealth_speech(device.device_id, text, mood, intensity)
+        elif cmd == "quick_action":
+            action = data.get('action')
+            dj_handle_quick_action(device.device_id, action)
+        elif cmd == "behavior":
+            behavior_name = data.get('behavior_name')
+            dj_handle_behavior(device.device_id, behavior_name)
+        elif cmd == "sound_effect":
+            sound_name = data.get('sound_name')
+            volume = float(data.get('volume', 0.75))
+            dj_handle_sound_effect(device.device_id, sound_name, volume)
+        elif cmd == "preset":
+            preset_name = data.get('preset_name')
+            dj_handle_preset(device.device_id, preset_name)
+        elif cmd == "custom_markup":
+            markup = data.get('markup')
+            if not markup:
+                return JsonResponse({'result': 'error', 'message': 'No markup provided for custom command'}, status=400)
+            logger.info(f"Sending custom markup command for device {device.device_id}")
+            get_instance().send_telehealth_markup(device.device_id, markup)
+        elif cmd == "set_emotion":
+            mood = data.get('mood', 'neutral')
+            intensity = float(data.get('intensity', 0.5))
+            # Apply emotion state to robot
+            logger.info(f"Setting emotion for device {device.device_id}: mood={mood}, intensity={intensity}")
+            # Send a minimal speech with the emotion settings to update robot's emotional state
+            get_instance().send_telehealth_speech(device.device_id, " ", mood, intensity)
+        elif cmd == "sequence":
+            sequence_name = data.get('sequence_name')
+            dj_handle_sequence(device.device_id, sequence_name)
+        elif cmd == "play_custom_sequence":
+            sequence_data_raw = data.get('sequence_data')
+            if isinstance(sequence_data_raw, str):
+                sequence_data = json.loads(sequence_data_raw)
+            else:
+                sequence_data = sequence_data_raw or []
+            dj_handle_custom_sequence(device.device_id, sequence_data)
+        elif cmd == "save_sequence":
+            sequence_name = data.get('sequence_name')
+            sequence_data_raw = data.get('sequence_data')
+            if isinstance(sequence_data_raw, str):
+                sequence_data = json.loads(sequence_data_raw)
+            else:
+                sequence_data = sequence_data_raw or []
+            result = dj_save_sequence(device, sequence_name, sequence_data)
+            return JsonResponse(result)
+        elif cmd == "load_sequence":
+            sequence_name = data.get('sequence_name')
+            result = dj_load_sequence(device, sequence_name)
+            return JsonResponse(result)
+        elif cmd == "list_sequences":
+            result = dj_list_sequences(device)
+            return JsonResponse(result)
+        elif cmd == "play_macro":
+            macro_actions_raw = data.get('macro_actions')
+            if isinstance(macro_actions_raw, str):
+                macro_actions = json.loads(macro_actions_raw)
+            else:
+                macro_actions = macro_actions_raw or []
+            dj_handle_play_macro(device.device_id, macro_actions)
+        elif cmd == "repeated_behavior":
+            behavior_name = data.get('behavior_name')
+            duration_seconds = int(data.get('duration_seconds', 60))
+            if not behavior_name:
+                return JsonResponse({'result': 'error', 'message': 'No behavior name provided for repeated behavior'}, status=400)
+            dj_handle_repeated_behavior(device.device_id, behavior_name, duration_seconds)
+        elif cmd == "delete_sequence":
+            sequence_name = data.get('sequence_name')
+            result = dj_delete_sequence(device, sequence_name)
+            return JsonResponse(result)
+        elif cmd == "laugh_60s":
+            dj_handle_laugh_60_seconds(device.device_id)
+        elif cmd == "dj_mix":
+            mix_command_key = data.get('mix_command_key')
+            if mix_command_key not in DJ_MIX_COMMANDS:
+                return JsonResponse({'result': 'error', 'message': f'Unknown DJ MIX command: {mix_command_key}'}, status=400)
+            dj_handle_mix_command(device.device_id, mix_command_key)
+        else:
+            return JsonResponse({'result': 'error', 'message': f'Unknown command: {cmd}'})
+
+        return JsonResponse({'result': 'success', 'message': f'Executed command: {cmd}'})
+
+    except MoxieDevice.DoesNotExist:
+        return JsonResponse({'result': 'error', 'message': 'Device not found'})
+    except Exception as e:
+        logger.error(f"Error in DJ command API: {str(e)}")
+        return JsonResponse({'result': 'error', 'message': str(e)})
+
 def dj_handle_sound_effect(device_id, sound_name, volume):
     """Handle sound effect playback"""
     markup = get_sound_effect_markup(sound_name, volume)
@@ -867,9 +1156,9 @@ def dj_handle_preset(device_id, preset_name):
     preset = get_preset_actions(preset_name)
     for action_type, params in preset:
         if action_type == 'speak':
-            get_instance().send_telehealth_speech(device_id, 
-                                                 params['text'], 
-                                                 params['mood'], 
+            get_instance().send_telehealth_speech(device_id,
+                                                 params['text'],
+                                                 params['mood'],
                                                  params['intensity'])
         elif action_type == 'behavior':
             dj_handle_behavior(device_id, params['behavior_name'])
@@ -882,35 +1171,20 @@ def dj_handle_preset(device_id, preset_name):
         time.sleep(0.5)
 
 def dj_handle_welcome_test_sequence(device_id):
-    """Handle the welcome test sequence with individual commands and timing"""
-    import threading
-    import time
-    
-    def run_sequence():
-        # Step 1: Wave behavior
-        logger.info(f"Welcome test: Starting wave behavior for device {device_id}")
-        dj_handle_behavior(device_id, 'Bht_Wait_Hug')
-        time.sleep(3)  # Wait for wave to complete
-        
-        # Step 2: Clear throat behavior  
-        logger.info(f"Welcome test: Starting clear throat behavior for device {device_id}")
-        dj_handle_behavior(device_id, 'Bht_Vg_Clear_Throat')
-        time.sleep(2)  # Wait for clear throat to complete
-        
-        # Step 3: Welcome speech
-        logger.info(f"Welcome test: Starting welcome speech for device {device_id}")
-        get_instance().send_telehealth_speech(
-            device_id, 
-            "Welcome my friends! Your love and stories make me so happy! Now you can talk with me directly. I can't wait to see what you share with me!",
-            'happy',
-            0.7
-        )
-        logger.info(f"Welcome test: Sequence completed for device {device_id}")
-    
-    # Run sequence in background thread so it doesn't block
-    thread = threading.Thread(target=run_sequence)
-    thread.daemon = True
-    thread.start()
+    """Handle the welcome test sequence using proper markup with built-in timing"""
+    # Use markup with proper timing controls instead of threads
+    # This creates a single command with all behaviors and pauses built-in
+    welcome_markup = '''
+<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.5,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:true,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>
+<break time="1s"/>
+<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.5,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:true,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>
+<break time="1s"/>
+Welcome my friends! Your love and stories make me so happy! Now you can talk with me directly. I can't wait to see what you share with me!
+    '''.strip()
+
+    logger.info(f"Welcome test: Sending complete sequence for device {device_id}")
+    get_instance().send_telehealth_markup(device_id, welcome_markup)
+    logger.info(f"Welcome test: Sequence sent to device {device_id}")
 
 def dj_handle_sequence(device_id, sequence_name):
     """Handle predefined sequences of behaviors and speech"""
@@ -918,7 +1192,7 @@ def dj_handle_sequence(device_id, sequence_name):
     if sequence_name == 'welcome_test':
         dj_handle_welcome_test_sequence(device_id)
         return
-    
+
     sequence_markup = get_sequence_markup(sequence_name)
     if sequence_markup:
         get_instance().send_telehealth_markup(device_id, sequence_markup)
@@ -930,21 +1204,21 @@ def dj_handle_custom_sequence(device_id, sequence_data):
     if not sequence_data:
         logger.warning("Empty sequence data")
         return
-    
+
     import threading
     import time
-    
+
     def run_sequence():
         """Run the sequence in a background thread to avoid blocking"""
         logger.info(f"Starting custom sequence playback for device {device_id} with {len(sequence_data)} items")
-        
+
         # Track current emotional state for the sequence
         current_mood = 'neutral'
         current_intensity = 0.5
-        
+
         for i, item in enumerate(sequence_data):
             logger.info(f"Executing sequence item {i+1}/{len(sequence_data)}: {item}")
-            
+
             item_type = item.get('type')
             if item_type == 'behavior':
                 dj_handle_behavior(device_id, item.get('value'))
@@ -953,11 +1227,27 @@ def dj_handle_custom_sequence(device_id, sequence_data):
             elif item_type == 'set_emotion':
                 # Update current emotional state
                 emotion_value = item.get('value', {})
-                if emotion_value.get('mood'):
+                if emotion_value.get('mood') is not None:
                     current_mood = emotion_value.get('mood')
                 if emotion_value.get('intensity') is not None:
                     current_intensity = float(emotion_value.get('intensity'))
-                logger.info(f"Updated emotion state: mood={current_mood}, intensity={current_intensity}")
+
+                # Look ahead to see if the next item is also a set_emotion
+                # If so, merge them to avoid overriding
+                should_apply_now = True
+                if i + 1 < len(sequence_data):
+                    next_item = sequence_data[i + 1]
+                    if next_item.get('type') == 'set_emotion':
+                        should_apply_now = False  # Wait for the next emotion item
+                        logger.info(f"Delaying emotion application - next item is also emotion")
+
+                if should_apply_now:
+                    logger.info(f"Setting emotion state: mood={current_mood}, intensity={current_intensity}")
+                    # Actually apply the emotion to the robot by sending a minimal speech
+                    # This ensures the automarkup system properly processes the emotion
+                    get_instance().send_telehealth_speech(device_id, " ", current_mood, current_intensity)
+                    # Small delay to let emotion take effect
+                    time.sleep(0.5)
             elif item_type == 'speech':
                 # Use emotion from item if provided, otherwise use current sequence emotion
                 mood = item.get('mood', current_mood)
@@ -975,18 +1265,18 @@ def dj_handle_custom_sequence(device_id, sequence_data):
                 pause_duration = float(item.get('value', 1.0))
                 logger.info(f"Pausing for {pause_duration} seconds")
                 time.sleep(pause_duration)
-                
+
             # Add small delay between items to prevent overwhelming the robot
             if i < len(sequence_data) - 1:  # Don't delay after the last item
                 time.sleep(0.2)
-        
+
         logger.info(f"Custom sequence completed for device {device_id}")
-    
+
     # Start the sequence in a background thread
     thread = threading.Thread(target=run_sequence)
     thread.daemon = True
     thread.start()
-    
+
     logger.info(f"Custom sequence started in background thread for device {device_id}")
 
 def dj_save_sequence(device, sequence_name, sequence_data):
@@ -994,19 +1284,19 @@ def dj_save_sequence(device, sequence_name, sequence_data):
     try:
         if not device.robot_config:
             device.robot_config = {}
-        
+
         if 'custom_sequences' not in device.robot_config:
             device.robot_config['custom_sequences'] = {}
-        
+
         device.robot_config['custom_sequences'][sequence_name] = {
             'name': sequence_name,
             'sequence': sequence_data,
             'created_at': timezone.now().isoformat()
         }
-        
+
         device.save()
         logger.info(f"Saved custom sequence '{sequence_name}' for device {device.device_id}")
-        
+
         return {'success': True, 'message': f'Sequence "{sequence_name}" saved successfully'}
     except Exception as e:
         logger.error(f"Failed to save sequence: {str(e)}")
@@ -1017,16 +1307,16 @@ def dj_load_sequence(device, sequence_name):
     try:
         if not device.robot_config or 'custom_sequences' not in device.robot_config:
             return {'success': False, 'message': 'No saved sequences found'}
-        
+
         sequences = device.robot_config['custom_sequences']
         if sequence_name not in sequences:
             return {'success': False, 'message': f'Sequence "{sequence_name}" not found'}
-        
+
         sequence_data = sequences[sequence_name]
         logger.info(f"Loaded custom sequence '{sequence_name}' for device {device.device_id}")
-        
+
         return {
-            'success': True, 
+            'success': True,
             'message': f'Sequence "{sequence_name}" loaded successfully',
             'sequence': sequence_data['sequence']
         }
@@ -1039,17 +1329,17 @@ def dj_list_sequences(device):
     try:
         if not device.robot_config or 'custom_sequences' not in device.robot_config:
             return {'success': True, 'sequences': []}
-        
+
         sequences = device.robot_config['custom_sequences']
         sequence_list = []
-        
+
         for name, data in sequences.items():
             sequence_list.append({
                 'name': name,
                 'created_at': data.get('created_at'),
                 'steps': len(data.get('sequence', []))
             })
-        
+
         return {'success': True, 'sequences': sequence_list}
     except Exception as e:
         logger.error(f"Failed to list sequences: {str(e)}")
@@ -1060,17 +1350,17 @@ def dj_delete_sequence(device, sequence_name):
     try:
         if not device.robot_config or 'custom_sequences' not in device.robot_config:
             return {'success': False, 'message': 'No saved sequences found'}
-        
+
         sequences = device.robot_config['custom_sequences']
         if sequence_name not in sequences:
             return {'success': False, 'message': f'Sequence "{sequence_name}" not found'}
-        
+
         # Delete the sequence
         del sequences[sequence_name]
         device.save()
-        
+
         logger.info(f"Deleted custom sequence '{sequence_name}' for device {device.device_id}")
-        
+
         return {'success': True, 'message': f'Sequence "{sequence_name}" deleted successfully'}
     except Exception as e:
         logger.error(f"Failed to delete sequence: {str(e)}")
@@ -1097,23 +1387,64 @@ def dj_handle_play_macro(device_id, macro_actions):
             dj_handle_sound_effect(device_id, action_data.get('sound_name'), action_data.get('volume', 0.75))
         elif cmd == 'preset':
             dj_handle_preset(device_id, action_data.get('preset_name'))
-        
+
         # Add delay between macro actions
         import time
         time.sleep(0.3)
+
+def dj_handle_repeated_behavior(device_id, behavior_name, duration_seconds):
+    """Handle repeated execution of a behavior - create a simple sequence markup"""
+    from hive.behavior_config import get_behavior_markup
+
+    logger.info(f"Creating repeated behavior sequence '{behavior_name}' for {duration_seconds} seconds on device {device_id}")
+
+    # Get the base behavior markup
+    base_markup = get_behavior_markup(behavior_name)
+    if not base_markup:
+        logger.error(f"No markup found for behavior '{behavior_name}'")
+        return
+
+    # Calculate how many repetitions we need (each laugh is ~2 seconds + 0.5s pause)
+    behavior_cycle = 2.5  # 2s behavior + 0.5s pause
+    repetitions = max(1, int(duration_seconds / behavior_cycle))
+
+    # Build a sequence with breaks between behaviors
+    sequence_parts = []
+    for i in range(repetitions):
+        sequence_parts.append(base_markup)
+        if i < repetitions - 1:  # Don't add break after last one
+            sequence_parts.append('<break time="0.5s"/>')
+
+    # Combine all parts into one markup command
+    full_sequence = ' '.join(sequence_parts)
+
+    logger.info(f"Sending repeated behavior sequence with {repetitions} repetitions to device {device_id}")
+    server = get_instance()
+    server.send_telehealth_markup(device_id, full_sequence)
+
+def dj_handle_laugh_60_seconds(device_id):
+    """Handle 60-second continuous laughing using the sequence approach"""
+    from hive.behavior_config import create_laugh_60_second_sequence
+
+    # Get the pre-built 60-second laugh sequence
+    laugh_sequence = create_laugh_60_second_sequence()
+
+    logger.info(f"Sending 60-second laugh sequence to device {device_id}")
+    server = get_instance()
+    server.send_telehealth_markup(device_id, laugh_sequence)
 
 # ANIMATION TESTER - Load animations from CSV and provide testing interface
 class AnimationTesterView(generic.DetailView):
     template_name = "hive/animation_tester.html"
     model = MoxieDevice
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         animations = self.load_animations_from_session()
         context['total_animations'] = len(animations)
         context['has_uploaded_file'] = len(animations) > 0
         return context
-    
+
     def load_animations_from_session(self):
         """Load animations from uploaded file in session"""
         # Get animations from session (already parsed and stored)
@@ -1125,7 +1456,7 @@ class AnimationTesterView(generic.DetailView):
 def animation_tester_api(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
-        
+
         if request.method == 'GET':
             # Return status information
             result = {
@@ -1133,15 +1464,15 @@ def animation_tester_api(request, pk):
                 "device_name": device.name
             }
             return JsonResponse(result)
-            
+
         elif request.method == 'POST':
             cmd = request.POST['command']
-            
+
             if cmd == "test_animation":
                 # Send animation to robot
                 animation_name = request.POST.get('animation_name')
                 markup = request.POST.get('markup', '')
-                
+
                 if markup:
                     # Use provided markup
                     get_instance().send_telehealth_markup(device.device_id, markup)
@@ -1149,36 +1480,36 @@ def animation_tester_api(request, pk):
                     # Generate markup for behavior tree command
                     generated_markup = f'<mark name="cmd:behaviour-tree,data:{{+transition+:0.3,+duration+:2.0,+repeat+:1,+layerBlendInTime+:0.4,+layerBlendOutTime+:0.4,+blocking+:false,+action+:0,+eventName+:+Gesture_None+,+category+:+None+,+behaviour+:+{animation_name}+,+Track+:++}}"/>'
                     get_instance().send_telehealth_markup(device.device_id, generated_markup)
-                
+
                 logger.info(f"Sent animation {animation_name} to device {device.device_id}")
                 return JsonResponse({'result': 'Animation sent', 'animation': animation_name})
-                
+
             elif cmd == "mark_result":
                 # Store test result in session
                 animation_id = request.POST.get('animation_id')
                 result = request.POST.get('result')  # 'yes' or 'no'
-                
+
                 # Initialize session data if needed
                 if 'animation_results' not in request.session:
                     request.session['animation_results'] = {}
-                
+
                 request.session['animation_results'][animation_id] = result
                 request.session.modified = True
-                
+
                 logger.info(f"Marked animation {animation_id} as {result}")
                 return JsonResponse({'result': 'Result saved', 'animation_id': animation_id, 'test_result': result})
-                
+
             elif cmd == "get_results":
                 # Return current test results
                 results = request.session.get('animation_results', {})
                 return JsonResponse({'results': results})
-                
+
             elif cmd == "clear_results":
                 # Clear all test results
                 request.session['animation_results'] = {}
                 request.session.modified = True
                 return JsonResponse({'result': 'Results cleared'})
-                
+
             elif cmd == "clear_single_result":
                 # Clear result for a single animation
                 animation_id = request.POST.get('animation_id')
@@ -1187,14 +1518,14 @@ def animation_tester_api(request, pk):
                     request.session.modified = True
                     logger.info(f"Cleared result for animation {animation_id}")
                 return JsonResponse({'result': 'Single result cleared', 'animation_id': animation_id})
-                
+
             elif cmd == "get_animations":
                 # Return animations data safely
                 animations = request.session.get('animations_data', [])
                 return JsonResponse({'animations': animations})
-        
+
         return JsonResponse({'result': True})
-        
+
     except MoxieDevice.DoesNotExist:
         logger.warning(f"Animation tester for unfound device pk {pk}")
         return HttpResponseBadRequest()
@@ -1207,29 +1538,29 @@ def animation_results_download(request, pk):
     """Download animation test results as CSV"""
     try:
         device = MoxieDevice.objects.get(pk=pk)
-        
+
         # Load original animations from session
         animations = request.session.get('animations_data', [])
-        
+
         if not animations:
             return HttpResponseBadRequest("No animation data found. Please upload a CSV file first.")
-        
+
         # Get test results from session
         results = request.session.get('animation_results', {})
-        
+
         # Create CSV response
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="animation_test_results_{device.name}.csv"'
-        
+
         writer = csv.writer(response)
         # Write header with new 'Worked' column
         writer.writerow(['File Name', 'Markup', 'Does it work?', 'Function', 'Notes/Observations', 'Video Recording', 'Test Result'])
-        
+
         # Write animation data with test results
         for animation in animations:
             animation_id = str(animation['id'])
             worked_result = results.get(animation_id, '')
-            
+
             # Convert yes/no to more readable format
             if worked_result == 'yes':
                 test_result = 'Working'
@@ -1237,7 +1568,7 @@ def animation_results_download(request, pk):
                 test_result = 'Not Working'
             else:
                 test_result = 'Not Tested'
-            
+
             writer.writerow([
                 animation['file_name'],
                 animation['markup'],
@@ -1247,9 +1578,9 @@ def animation_results_download(request, pk):
                 animation['video_recording'],
                 test_result
             ])
-        
+
         return response
-        
+
     except MoxieDevice.DoesNotExist:
         return HttpResponseBadRequest("Device not found")
     except Exception as e:
@@ -1263,20 +1594,20 @@ def upload_animation_csv(request):
     try:
         if 'animation_file' not in request.FILES:
             return redirect('hive:dashboard_alert', alert_message='No file uploaded.')
-        
+
         animation_file = request.FILES['animation_file']
-        
+
         # Validate file type
         if not (csv_file.name.endswith('.csv') or csv_file.name.endswith('.tsv')):
             return redirect('hive:dashboard_alert', alert_message='Please upload a CSV or TSV file.')
-        
+
         # Read and parse CSV content with encoding detection
         raw_content = csv_file.read()
-        
+
         # Try different encodings with fallback
         encodings = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252']
         csv_content = None
-        
+
         for encoding in encodings:
             try:
                 csv_content = raw_content.decode(encoding)
@@ -1284,27 +1615,27 @@ def upload_animation_csv(request):
                 break
             except UnicodeDecodeError:
                 continue
-        
+
         if csv_content is None:
             return redirect('hive:dashboard_alert', alert_message='Could not decode file. Please ensure it uses UTF-8 encoding.')
         logger.info(f"Uploaded CSV file: {csv_file.name}, size: {len(csv_content)} chars")
         logger.info(f"CSV content preview: {csv_content[:300]}...")
-        
+
         animations = parse_animation_csv_content(csv_content)
-        
+
         if not animations:
             logger.warning(f"No animations parsed from file {animation_file.name}")
             return redirect('hive:dashboard_alert', alert_message=f'No valid animations found in file. Check that it uses tab (TSV), comma (CSV), or pipe delimiters and has the correct headers: File Name, Markup, Does it work?, Function, Notes/Observations, Video Recording')
-        
+
         # Store in session for use in animation tester (only store parsed data)
         request.session['animation_file_name'] = animation_file.name
         request.session['animation_count'] = len(animations)
         request.session['animations_data'] = animations
         request.session.modified = True
-        
+
         logger.info(f"Uploaded animation CSV with {len(animations)} animations")
         return redirect('hive:dashboard_alert', alert_message=f'Successfully uploaded {len(animations)} animations from {animation_file.name}')
-        
+
     except Exception as e:
         logger.error(f"Error uploading animation CSV: {str(e)}")
         return redirect('hive:dashboard_alert', alert_message=f'Error processing CSV file: {str(e)}')
@@ -1317,47 +1648,47 @@ def clear_animation_csv(request):
     request.session.pop('animations_data', None)
     request.session.pop('animation_results', None)
     request.session.modified = True
-    
+
     return redirect('hive:dashboard_alert', alert_message='Animation file cleared.')
 
 # HELPER FUNCTION - Parse animation CSV content
 def parse_animation_csv_content(csv_content):
     """Parse CSV content and return list of animations"""
     animations = []
-    
+
     try:
         # Use StringIO to treat the string as a file-like object
         csv_file = io.StringIO(csv_content)
-        
+
         # Try different delimiters: tab first (for TSV), then comma, then pipe
         delimiters = [('\t', 'tab'), (',', 'comma'), ('|', 'pipe')]
         reader = None
-        
+
         for delimiter, name in delimiters:
             csv_file.seek(0)
             test_reader = csv.DictReader(csv_file, delimiter=delimiter)
             fieldnames = test_reader.fieldnames
             logger.info(f"Trying {name} delimiter, headers: {fieldnames}")
-            
+
             if fieldnames and 'File Name' in fieldnames:
                 csv_file.seek(0)
                 reader = csv.DictReader(csv_file, delimiter=delimiter)
                 logger.info(f"Successfully using {name} delimiter")
                 break
-        
+
         if not reader:
             logger.error("Could not find suitable delimiter for CSV file")
             return []
-        
+
         animation_count = 0
         for i, row in enumerate(reader):
             # Get the file name and check if it exists
             file_name = row.get('File Name', '').strip()
-            
+
             # Skip empty rows or header-like rows
             if not file_name or file_name == 'File Name':
                 continue
-                
+
             animation_count += 1
             animation = {
                 'id': animation_count,
@@ -1369,15 +1700,14 @@ def parse_animation_csv_content(csv_content):
                 'does_it_work': row.get('Does it work?', '').strip()
             }
             animations.append(animation)
-            
+
             # Debug: log first few animations
             if animation_count <= 3:
                 logger.info(f"Parsed animation {animation_count}: {file_name}")
-            
+
     except Exception as e:
         logger.error(f"Error parsing CSV content: {str(e)}")
         logger.error(f"CSV content preview: {csv_content[:200]}...")
-        
+
     logger.info(f"Total animations parsed: {len(animations)}")
     return animations
-

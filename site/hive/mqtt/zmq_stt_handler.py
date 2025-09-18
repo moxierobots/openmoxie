@@ -1,7 +1,7 @@
+import os
 from .moxie_zmq_handler import ZMQHandler
 from .protos.embodied.perception.audio.zmqSTT_pb2 import zmqSTTRequest,zmqSTTResponse
 import soundfile as sf
-import numpy as np
 import io
 import time
 import logging
@@ -15,6 +15,14 @@ LOG_WAV=False
 OPENAI_MODEL='whisper-1'
 
 logger = logging.getLogger(__name__)
+
+def _get_numpy():
+    if os.environ.get('SKIP_NUMPY', 'false').lower() in {'1', 'true', 'yes'}:
+        raise ImportError('numpy disabled via SKIP_NUMPY')
+
+    import numpy as _np
+
+    return _np
 
 def now_ms():
     return time.time_ns() // 1_000_000
@@ -43,6 +51,12 @@ class STTSession:
     def perform(self):
         logger.info(f'Processing session_id {self._session_id} with {len(self._stream_bytes)} bytes')
         buffer = io.BytesIO()
+        try:
+            np = _get_numpy()
+        except ImportError as exc:
+            logger.warning("Skipping STT session processing because numpy is unavailable: %s", exc)
+            return
+
         sf.write(
             buffer,  # File-like object (None for bytes)
             np.frombuffer(self._stream_bytes, dtype=np.int16),

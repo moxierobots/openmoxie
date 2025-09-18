@@ -1,2096 +1,3519 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% block content %}
 <div class="moxheader">
-  <a href="{% url 'hive:dashboard' %}">
-    <img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}">
-  </a>
-  OpenMoxie DJ Panel<span class="moxversion">{{moxie_version}}</span>
+    <a href="{% url 'hive:dashboard' %}">
+        <img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}" />
+    </a>
+    OpenMoxie DJ Panel<span class="moxversion">{{moxie_version}}</span>
 </div>
 
 <div class="dj-panel-container">
-  <div class="dj-panel">
-    <!-- Status Display -->
-    <div class="status-section">
-      <h3>{{object.name}} Status</h3>
-      <div class="status-indicators">
-        <div class="status-item">
-          <span class="status-label">Connection:</span>
-          <span class="badge text-bg-success" id="moxie_state">Online</span>
+    <div class="dj-panel">
+        <!-- Status Display -->
+        <div class="status-section">
+            <h3>{{object.name}} Status</h3>
+            <div class="status-indicators">
+                <div class="status-item">
+                    <span class="status-label">Connection:</span>
+                    <span class="badge text-bg-success" id="moxie_state"
+                        >Online</span
+                    >
+                </div>
+                <div class="status-item">
+                    <span class="status-label">DJ Mode:</span>
+                    <span class="badge text-bg-success" id="dj_state"
+                        >READY</span
+                    >
+                </div>
+                <button id="dj_button" type="button" class="btn btn-success">
+                    Start DJ Mode
+                </button>
+            </div>
         </div>
-        <div class="status-item">
-          <span class="status-label">DJ Mode:</span>
-          <span class="badge text-bg-success" id="dj_state">READY</span>
+
+        <!-- Quick Action Buttons -->
+        <div class="quick-actions">
+            <h3>Quick Actions</h3>
+            <div class="action-grid">
+                <button class="action-btn celebrate" data-action="celebrate">
+                    🎉 Celebrate
+                </button>
+                <button class="action-btn dance" data-action="dance">
+                    💃 Dance
+                </button>
+                <button class="action-btn laugh" data-action="laugh">
+                    😄 Belly Laugh
+                </button>
+                <button class="action-btn wave" data-action="wave">
+                    👋 Wave
+                </button>
+                <button class="action-btn point" data-action="point">
+                    👉 Point
+                </button>
+                <button class="action-btn think" data-action="think">
+                    🤔 Think
+                </button>
+                <button class="action-btn surprise" data-action="surprise">
+                    😲 Surprise
+                </button>
+                <button class="action-btn bow" data-action="bow">🙇 Bow</button>
+                <button class="action-btn snore" data-action="snore">
+                    😴 Snore
+                </button>
+            </div>
         </div>
-        <button id="dj_button" type="button" class="btn btn-success">Start DJ Mode</button>
-      </div>
+
+        <!-- Emotion Control Panel -->
+        <div class="emotion-mixer">
+            <h3>🎭 Emotion Mixer</h3>
+            <div class="emotion-controls">
+                <div class="emotion-channel">
+                    <label>Mood</label>
+                    <select id="mood_selector" class="mood-selector">
+                        <option value="neutral">Neutral</option>
+                        <option value="happy">Happy</option>
+                        <option value="positive">Positive</option>
+                        <option value="excited">Excited</option>
+                        <option value="curious">Curious</option>
+                        <option value="silly">Silly</option>
+                        <option value="shy">Shy</option>
+                        <option value="concerned">Concerned</option>
+                        <option value="confused">Confused</option>
+                        <option value="angry">Angry</option>
+                        <option value="sad">Sad</option>
+                        <option value="negative">Negative</option>
+                        <option value="afraid">Afraid</option>
+                        <option value="embarrassed">Embarrassed</option>
+                    </select>
+                </div>
+                <div class="emotion-channel">
+                    <label>Intensity</label>
+                    <div class="slider-container">
+                        <input
+                            type="range"
+                            id="intensity_slider"
+                            min="0"
+                            max="100"
+                            value="50"
+                            class="emotion-slider"
+                        />
+                        <span id="intensity_display">50%</span>
+                    </div>
+                </div>
+                <div class="emotion-channel">
+                    <button id="apply_emotion" class="btn btn-primary">
+                        ✨ Apply Emotion
+                    </button>
+                    <small class="emotion-help"
+                        >Changes robot's current emotional state</small
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Behavior Control -->
+        <div class="behavior-control">
+            <h3>Behavior Control</h3>
+            <div class="behavior-grid">
+                <div class="behavior-section">
+                    <h4>Laughs & Vocal</h4>
+                    <div class="laugh-buttons">
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Big_Fourcount"
+                        >
+                            Belly Laugh
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Big"
+                        >
+                            Big Laugh
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Big_Fourcount"
+                        >
+                            Four-Count Laugh (1 min)
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Big_Fourcount_Loop"
+                        >
+                            Four-Count Laugh (90s)
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Mischief"
+                        >
+                            Mischief Laugh
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Laugh_Nervous"
+                        >
+                            Nervous Laugh
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Gasp"
+                        >
+                            Gasp
+                        </button>
+                    </div>
+                </div>
+                <div class="behavior-section">
+                    <h4>Expressions & Reactions</h4>
+                    <div class="expression-buttons">
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Oh_Eureka"
+                        >
+                            Eureka!
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Ooo_Cringe"
+                        >
+                            Cringe
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Ooo_Urgent"
+                        >
+                            Urgent
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Startled"
+                        >
+                            Startled
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_sigh_relief"
+                        >
+                            Sigh Relief
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_yawn_big"
+                        >
+                            Big Yawn
+                        </button>
+                    </div>
+                </div>
+                <div class="behavior-section">
+                    <h4>Movements & Poses</h4>
+                    <div class="movement-buttons">
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Spin_360"
+                        >
+                            360° Spin
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Photo_pose_Curious"
+                        >
+                            Curious Pose
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Circle_motion"
+                        >
+                            Circle Motion
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Turn_Away"
+                        >
+                            Turn Away
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Turn_Back"
+                        >
+                            Turn Back
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Wait_Hug"
+                        >
+                            Wait for Hug
+                        </button>
+                    </div>
+                </div>
+                <div class="behavior-section">
+                    <h4>Special Actions</h4>
+                    <div class="special-buttons">
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Ice_Cream"
+                        >
+                            Ice Cream
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_suckThroughTeeth"
+                        >
+                            Suck Through Teeth
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vision_Check"
+                        >
+                            Vision Check
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Clear_Throat"
+                        >
+                            Clear Throat
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Gulp"
+                        >
+                            Gulp
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Psst"
+                        >
+                            Psst
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Back_and_forth_arm_wave"
+                        >
+                            🦈 Baby Shark Dance
+                        </button>
+                    </div>
+                </div>
+                <div class="behavior-section">
+                    <h4>Sleep & Rest</h4>
+                    <div class="sleep-buttons">
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Snore_Light"
+                        >
+                            Light Snore
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Snore_Heavy"
+                        >
+                            Heavy Snore
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Shiver_Sustained"
+                        >
+                            Shiver
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Hmm_Confused_Sustained"
+                        >
+                            Confused Hmm
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Grunt_In_Transit_Sustained"
+                        >
+                            Grunt
+                        </button>
+                        <button
+                            class="behavior-btn"
+                            data-behavior="Bht_Vg_Nnn_Disagree"
+                        >
+                            Disagree
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DJ MIX Section -->
+        <div class="djmix-panel">
+            <h3>🎧 DJ MIX - Combined Audio + Dance Commands</h3>
+            <p class="djmix-description">
+                Premium dance routines with synchronized music and choreography
+            </p>
+
+            <div class="djmix-grid">
+                <!-- Zaygo Dances (140 BPM) -->
+                <div class="djmix-section">
+                    <h4>🎵 Zaygo Dances (140 BPM)</h4>
+                    <div class="djmix-buttons">
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="zaygo_long_140"
+                            title="Extended Zaygo dance routine with music - 60s"
+                        >
+                            🎚️ Zaygo Long Mix (60s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="zaygo_medium_140"
+                            title="Medium-length Zaygo dance with music - 30s"
+                        >
+                            🎛️ Zaygo Medium Mix (30s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="zaygo_short_140"
+                            title="Quick Zaygo dance burst with music - 15s"
+                        >
+                            🎚️ Zaygo Short Mix (15s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Karu Dances (135 BPM) -->
+                <div class="djmix-section">
+                    <h4>🎶 Karu Dances (135 BPM)</h4>
+                    <div class="djmix-buttons">
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="karu_long_135"
+                            title="Extended Karu dance routine with music - 60s"
+                        >
+                            🎵 Karu Long Mix (60s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="karu_medium_135"
+                            title="Medium-length Karu dance with music - 30s"
+                        >
+                            🎶 Karu Medium Mix (30s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="karu_short_135"
+                            title="Quick Karu dance burst with music - 15s"
+                        >
+                            🎵 Karu Short Mix (15s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Farfel Dances (130 BPM) -->
+                <div class="djmix-section">
+                    <h4>🎼 Farfel Dances (130 BPM)</h4>
+                    <div class="djmix-buttons">
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="farfel_long_130"
+                            title="Extended Farfel dance routine with music - 60s"
+                        >
+                            🎼 Farfel Long Mix (60s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="farfel_medium_130"
+                            title="Medium-length Farfel dance with music - 30s"
+                        >
+                            🎼 Farfel Medium Mix (30s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="farfel_short_130"
+                            title="Quick Farfel dance burst with music - 15s"
+                        >
+                            🎼 Farfel Short Mix (15s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cruncher Dances (120 BPM) -->
+                <div class="djmix-section">
+                    <h4>🎤 Cruncher Dances (120 BPM)</h4>
+                    <div class="djmix-buttons">
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="cruncher_long_120"
+                            title="Extended Cruncher dance routine with music - 60s"
+                        >
+                            🎤 Cruncher Long Mix (60s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="cruncher_medium_120"
+                            title="Medium-length Cruncher dance with music - 30s"
+                        >
+                            🎤 Cruncher Medium Mix (30s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="cruncher_short_120"
+                            title="Quick Cruncher dance burst with music - 15s"
+                        >
+                            🎤 Cruncher Short Mix (15s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Professor & Special Dances -->
+                <div class="djmix-section">
+                    <h4>✨ Special Dances</h4>
+                    <div class="djmix-buttons">
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="professor_long_120"
+                            title="Extended Professor dance routine with music - 60s"
+                        >
+                            🎓 Professor Long Mix (60s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="happy_birthday_dance"
+                            title="Special birthday celebration dance with music - 45s"
+                        >
+                            🎂 Happy Birthday Dance (45s)
+                        </button>
+                        <button
+                            class="djmix-btn"
+                            data-mix-command="freeze_dance"
+                            title="Interactive freeze dance game - 30s"
+                        >
+                            🧊 Freeze Dance Game (30s)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mix Controls -->
+                <div class="djmix-section">
+                    <h4>🎚️ Mix Controls</h4>
+                    <div class="djmix-controls">
+                        <button class="djmix-stop-btn djmix-btn" id="stop_mix">
+                            ⏹ Stop All Audio & Dance
+                        </button>
+                        <button
+                            class="interrupt-btn djmix-btn"
+                            id="interrupt_mix"
+                        >
+                            ⚡ Interrupt Current Mix
+                        </button>
+                        <div class="mix-status">
+                            <div class="current-mix" id="current_mix_info">
+                                No mix playing
+                            </div>
+                        </div>
+                        <div class="mix-info">
+                            <small
+                                >🎵 = Audio + Choreography | BPM = Beats Per
+                                Minute | Duration in seconds</small
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sound Effects Panel -->
+        <div class="sound-effects">
+            <h3>Sound Effects</h3>
+            <div class="sfx-grid">
+                <button class="sfx-btn" data-sound="sfxmm_incoming02">
+                    Incoming
+                </button>
+                <button class="sfx-btn" data-sound="bee - buzz">
+                    Bee Buzz
+                </button>
+                <button class="sfx-btn" data-sound="snake - sssssss">
+                    Snake Hiss
+                </button>
+                <button class="sfx-btn" data-sound="sniff1">Sniff</button>
+                <button class="behavior-btn" data-behavior="Bht_raspberry">
+                    😜 Raspberry
+                </button>
+                <button class="behavior-btn" data-behavior="Bht_raspberry_long">
+                    😜 Long Raspberry
+                </button>
+            </div>
+            <div class="volume-control">
+                <label>SFX Volume</label>
+                <input
+                    type="range"
+                    id="sfx_volume"
+                    min="0"
+                    max="100"
+                    value="75"
+                    class="volume-slider"
+                />
+                <span id="volume_display">75%</span>
+            </div>
+        </div>
+
+        <!-- Vocal Gestures -->
+        <div class="vocal-gestures">
+            <h3>Vocal Gestures</h3>
+            <div class="vocal-grid">
+                <button class="behavior-btn" data-behavior="Bht_Vg_gasp">
+                    😱 Gasp
+                </button>
+                <button class="behavior-btn" data-behavior="Bht_Vg_cough">
+                    😷 Cough
+                </button>
+                <button class="behavior-btn" data-behavior="Bht_Vg_gulp">
+                    😅 Gulp
+                </button>
+                <button
+                    class="behavior-btn"
+                    data-behavior="Bht_Vg_Clear_Throat"
+                >
+                    😤 Clear Throat
+                </button>
+                <button class="behavior-btn" data-behavior="Bht_Wing_Flap">
+                    🐦 Wing Flap
+                </button>
+                <button class="behavior-btn" data-behavior="Bht_Vg_Psst">
+                    🤫 Psst
+                </button>
+            </div>
+        </div>
+
+        <!-- Speech Control -->
+        <div class="speech-control">
+            <h3>Speech Control</h3>
+            <div class="speech-options">
+                <div class="speech-mode">
+                    <input
+                        type="radio"
+                        id="text_mode"
+                        name="speech_mode"
+                        value="text"
+                        checked
+                    />
+                    <label for="text_mode">Text Mode</label>
+                    <input
+                        type="radio"
+                        id="markup_mode"
+                        name="speech_mode"
+                        value="markup"
+                    />
+                    <label for="markup_mode">Markup Mode</label>
+                </div>
+
+                <div class="text-input-section" id="text_input_section">
+                    <textarea
+                        id="speech_text"
+                        placeholder="Enter what Moxie should say..."
+                        class="speech-input"
+                    ></textarea>
+                </div>
+
+                <div
+                    class="markup-input-section"
+                    id="markup_input_section"
+                    style="display: none"
+                >
+                    <textarea
+                        id="markup_text"
+                        placeholder="Enter markup XML..."
+                        class="markup-input"
+                    ></textarea>
+                </div>
+
+                <div class="speech-actions">
+                    <button id="speak_button" class="btn btn-primary">
+                        🎤 Speak
+                    </button>
+                    <button id="interrupt_button" class="btn btn-secondary">
+                        ⏹️ Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sequence Designer -->
+        <!-- SEQUENCE DESIGNER TEST MARKER -->
+        <div class="sequence-designer">
+            <h3>🎭 Sequence Designer</h3>
+
+            <!-- Behavior Palette -->
+            <div class="palette-section">
+                <h4>Drag & Drop Library</h4>
+                <div class="behavior-palette">
+                    <div class="palette-category">
+                        <h5>Laughs & Vocal</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Big_Fourcount"
+                                draggable="true"
+                            >
+                                😄 Belly Laugh
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Big"
+                                draggable="true"
+                            >
+                                😆 Big Laugh
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Big_Fourcount"
+                                draggable="true"
+                            >
+                                🤣 Four-Count Laugh (1 min)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Big_Fourcount_Loop"
+                                draggable="true"
+                            >
+                                🤣 Four-Count Laugh (90s)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Mischief"
+                                draggable="true"
+                            >
+                                😏 Mischief Laugh
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Laugh_Nervous"
+                                draggable="true"
+                            >
+                                😅 Nervous Laugh
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Gasp"
+                                draggable="true"
+                            >
+                                😱 Gasp
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Expressions & Reactions</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Oh_Eureka"
+                                draggable="true"
+                            >
+                                💡 Eureka!
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Ooo_Cringe"
+                                draggable="true"
+                            >
+                                😬 Cringe
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Ooo_Urgent"
+                                draggable="true"
+                            >
+                                🚨 Urgent
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Startled"
+                                draggable="true"
+                            >
+                                😲 Startled
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_sigh_relief"
+                                draggable="true"
+                            >
+                                😌 Sigh Relief
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_yawn_big"
+                                draggable="true"
+                            >
+                                😴 Big Yawn
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Movements & Poses</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Spin_360"
+                                draggable="true"
+                            >
+                                🌀 360° Spin
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Photo_pose_Curious"
+                                draggable="true"
+                            >
+                                🤔 Curious Pose
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Circle_motion"
+                                draggable="true"
+                            >
+                                💃 Circle Motion
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Turn_Away"
+                                draggable="true"
+                            >
+                                🔄 Turn Away
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Turn_Back"
+                                draggable="true"
+                            >
+                                ↩️ Turn Back
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Wait_Hug"
+                                draggable="true"
+                            >
+                                🤗 Wait for Hug
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Vocal Gestures</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_gasp"
+                                draggable="true"
+                            >
+                                😱 Gasp
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_cough"
+                                draggable="true"
+                            >
+                                😷 Cough
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_gulp"
+                                draggable="true"
+                            >
+                                😅 Gulp
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Clear_Throat"
+                                draggable="true"
+                            >
+                                😤 Clear Throat
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Wing_Flap"
+                                draggable="true"
+                            >
+                                🐦 Wing Flap
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Psst"
+                                draggable="true"
+                            >
+                                🤫 Psst
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Special Actions</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Ice_Cream"
+                                draggable="true"
+                            >
+                                🍦 Ice Cream
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_suckThroughTeeth"
+                                draggable="true"
+                            >
+                                🦷 Suck Through Teeth
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vision_Check"
+                                draggable="true"
+                            >
+                                👁️ Vision Check
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Gulp"
+                                draggable="true"
+                            >
+                                😅 Gulp
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Back_and_forth_arm_wave"
+                                draggable="true"
+                            >
+                                🦈 Baby Shark Dance
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Sleep & Rest</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Snore_Light"
+                                draggable="true"
+                            >
+                                😴 Light Snore
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Snore_Heavy"
+                                draggable="true"
+                            >
+                                💤 Heavy Snore
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Shiver_Sustained"
+                                draggable="true"
+                            >
+                                🥶 Shiver
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Hmm_Confused_Sustained"
+                                draggable="true"
+                            >
+                                🤔 Confused Hmm
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Grunt_In_Transit_Sustained"
+                                draggable="true"
+                            >
+                                😤 Grunt
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Vg_Nnn_Disagree"
+                                draggable="true"
+                            >
+                                😐 Disagree
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Emotion Mixer - Moods</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="happy"
+                                draggable="true"
+                            >
+                                😊 Happy
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="sad"
+                                draggable="true"
+                            >
+                                😢 Sad
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="excited"
+                                draggable="true"
+                            >
+                                🤩 Excited
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="calm"
+                                draggable="true"
+                            >
+                                😌 Calm
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="angry"
+                                draggable="true"
+                            >
+                                😠 Angry
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="surprised"
+                                draggable="true"
+                            >
+                                😲 Surprised
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_mood"
+                                data-value="neutral"
+                                draggable="true"
+                            >
+                                😐 Neutral
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Emotion Mixer - Intensity</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_intensity"
+                                data-value="low"
+                                draggable="true"
+                            >
+                                🔅 Low Intensity (1-3)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_intensity"
+                                data-value="medium"
+                                draggable="true"
+                            >
+                                💡 Medium Intensity (4-6)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="emotion_intensity"
+                                data-value="high"
+                                draggable="true"
+                            >
+                                🔆 High Intensity (7-10)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>DJMIX Special</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Back_and_forth_arm_wave"
+                                draggable="true"
+                            >
+                                🦈 DJ Shark Dance
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Spin_360"
+                                draggable="true"
+                            >
+                                🌀 DJ Spin
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_raspberry"
+                                draggable="true"
+                            >
+                                😜 DJ Scratch
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="sound"
+                                data-value="sfxmm_incoming02"
+                                draggable="true"
+                            >
+                                🎶 Beat Drop
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="set_emotion"
+                                data-value='{"mood": 1, "intensity": 1}'
+                                draggable="true"
+                            >
+                                😊 Happy Mood
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="sound"
+                                data-value="sc_yawn_big_03"
+                                draggable="true"
+                            >
+                                😴 Yawn Sound
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Wake_Up_Yawn"
+                                draggable="true"
+                            >
+                                😴 Wake Up
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="behavior"
+                                data-value="Bht_Hand_Holding"
+                                draggable="true"
+                            >
+                                🤝 Hand Hold
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Speech & Sound</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="speech"
+                                data-value=""
+                                draggable="true"
+                            >
+                                💬 Speech
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="sound"
+                                data-value="sfxmm_incoming02"
+                                draggable="true"
+                            >
+                                🔊 Sound Effect
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-category">
+                        <h5>Timing</h5>
+                        <div class="palette-items">
+                            <div
+                                class="draggable-item"
+                                data-type="pause"
+                                data-value="1.0"
+                                draggable="true"
+                            >
+                                ⏸️ Pause (1s)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="pause"
+                                data-value="2.0"
+                                draggable="true"
+                            >
+                                ⏸️ Pause (2s)
+                            </div>
+                            <div
+                                class="draggable-item"
+                                data-type="pause"
+                                data-value="3.0"
+                                draggable="true"
+                            >
+                                ⏸️ Pause (3s)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence Timeline -->
+            <div class="timeline-section">
+                <h4>Sequence Timeline</h4>
+                <div class="sequence-timeline" id="sequence-timeline">
+                    <div class="timeline-placeholder">
+                        Drag items here to build your sequence
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence Controls -->
+            <div class="sequence-controls">
+                <button id="play-sequence" class="btn btn-success" disabled>
+                    ▶️ Play Sequence
+                </button>
+                <button id="clear-sequence" class="btn btn-secondary">
+                    🗑️ Clear
+                </button>
+                <button id="save-sequence" class="btn btn-info" disabled>
+                    💾 Save
+                </button>
+                <button id="toggle-markup" class="btn btn-outline-warning">
+                    🔍 Show Markup
+                </button>
+                <input
+                    type="text"
+                    id="sequence-name"
+                    placeholder="Sequence name..."
+                    class="sequence-name-input"
+                />
+            </div>
+
+            <!-- Saved Sequences -->
+            <div class="saved-sequences-section">
+                <h4>Saved Sequences</h4>
+                <div id="saved-sequences-list" class="saved-sequences-list">
+                    <div class="loading-message">
+                        Loading saved sequences...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preset Panel -->
+        <div class="preset-panel">
+            <h3>Presets & Macros</h3>
+            <div class="preset-buttons">
+                <button class="preset-btn" data-preset="greeting">
+                    👋 Greeting
+                </button>
+                <button class="preset-btn" data-preset="party">
+                    🎉 Party Mode
+                </button>
+                <button class="preset-btn" data-preset="calm">
+                    😌 Calm Down
+                </button>
+                <button class="preset-btn" data-preset="energetic">
+                    ⚡ Get Energetic
+                </button>
+                <button class="preset-btn" data-preset="wake_up">
+                    🌅 Wake Up
+                </button>
+                <button class="preset-btn" data-preset="birthday">
+                    🎂 Birthday
+                </button>
+                <button class="preset-btn" data-preset="meditation">
+                    🧘 Meditation
+                </button>
+                <button class="preset-btn" data-preset="breathing">
+                    🐋 Breathing
+                </button>
+            </div>
+            <div class="macro-controls">
+                <button id="record_macro" class="btn btn-warning">
+                    🔴 Record Macro
+                </button>
+                <button id="stop_macro" class="btn btn-secondary" disabled>
+                    ⏹️ Stop Recording
+                </button>
+                <button id="play_macro" class="btn btn-success" disabled>
+                    ▶️ Play Last Macro
+                </button>
+                <a
+                    href="{% url 'hive:animation_tester' object.pk %}"
+                    class="btn btn-info"
+                    target="_blank"
+                    >🧪 Animation Tester</a
+                >
+            </div>
+        </div>
+
+        <!-- 60-Second Laugh Test Container -->
+        <div class="test-panel">
+            <h3>🧪 60-Second Laugh Tests</h3>
+            <div class="test-buttons">
+                <button id="test_repeated_behavior" class="btn btn-primary">
+                    🔄 Repeated Behavior (Option A)
+                </button>
+                <button id="test_laugh_sequence" class="btn btn-secondary">
+                    📦 Pre-built Sequence (Option B)
+                </button>
+                <button id="stop_laugh_test" class="btn btn-danger">
+                    ⏹️ Stop Laugh Test
+                </button>
+            </div>
+            <div class="test-status">
+                <p>
+                    <small
+                        >Test Status: <span id="test_status">Ready</span></small
+                    >
+                </p>
+                <p>
+                    <small
+                        >Duration:
+                        <input
+                            type="number"
+                            id="test_duration"
+                            value="60"
+                            min="5"
+                            max="300"
+                            style="width: 60px"
+                        />
+                        seconds</small
+                    >
+                </p>
+            </div>
+        </div>
     </div>
-
-
-    <!-- Quick Action Buttons -->
-    <div class="quick-actions">
-      <h3>Quick Actions</h3>
-      <div class="action-grid">
-        <button class="action-btn celebrate" data-action="celebrate">🎉 Celebrate</button>
-        <button class="action-btn dance" data-action="dance">💃 Dance</button>
-        <button class="action-btn laugh" data-action="laugh">😄 Belly Laugh</button>
-        <button class="action-btn wave" data-action="wave">👋 Wave</button>
-        <button class="action-btn point" data-action="point">👉 Point</button>
-        <button class="action-btn think" data-action="think">🤔 Think</button>
-        <button class="action-btn surprise" data-action="surprise">😲 Surprise</button>
-        <button class="action-btn bow" data-action="bow">🙇 Bow</button>
-        <button class="action-btn snore" data-action="snore">😴 Snore</button>
-      </div>
-    </div>
-
-    <!-- Emotion Control Panel -->
-    <div class="emotion-mixer">
-      <h3>🎭 Emotion Mixer</h3>
-      <div class="emotion-controls">
-        <div class="emotion-channel">
-          <label>Mood</label>
-          <select id="mood_selector" class="mood-selector">
-            <option value="neutral">Neutral</option>
-            <option value="happy">Happy</option>
-            <option value="positive">Positive</option>
-            <option value="excited">Excited</option>
-            <option value="curious">Curious</option>
-            <option value="silly">Silly</option>
-            <option value="shy">Shy</option>
-            <option value="concerned">Concerned</option>
-            <option value="confused">Confused</option>
-            <option value="angry">Angry</option>
-            <option value="sad">Sad</option>
-            <option value="negative">Negative</option>
-            <option value="afraid">Afraid</option>
-            <option value="embarrassed">Embarrassed</option>
-          </select>
-        </div>
-        <div class="emotion-channel">
-          <label>Intensity</label>
-          <div class="slider-container">
-            <input type="range" id="intensity_slider" min="0" max="100" value="50" class="emotion-slider">
-            <span id="intensity_display">50%</span>
-          </div>
-        </div>
-        <div class="emotion-channel">
-          <button id="apply_emotion" class="btn btn-primary">✨ Apply Emotion</button>
-          <small class="emotion-help">Changes robot's current emotional state</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Behavior Control -->
-    <div class="behavior-control">
-      <h3>Behavior Control</h3>
-      <div class="behavior-grid">
-        <div class="behavior-section">
-          <h4>Laughs & Vocal</h4>
-          <div class="laugh-buttons">
-            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Belly">Belly Laugh</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Big">Big Laugh</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Big_Fourcount">Four-Count Laugh</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Mischief">Mischief Laugh</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Laugh_Nervous">Nervous Laugh</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Gasp">Gasp</button>
-          </div>
-        </div>
-        <div class="behavior-section">
-          <h4>Expressions & Reactions</h4>
-          <div class="expression-buttons">
-            <button class="behavior-btn" data-behavior="Bht_Vg_Oh_Eureka">Eureka!</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Ooo_Cringe">Cringe</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Ooo_Urgent">Urgent</button>
-            <button class="behavior-btn" data-behavior="Bht_Startled">Startled</button>
-            <button class="behavior-btn" data-behavior="Bht_sigh_relief">Sigh Relief</button>
-            <button class="behavior-btn" data-behavior="Bht_yawn_big">Big Yawn</button>
-          </div>
-        </div>
-        <div class="behavior-section">
-          <h4>Movements & Poses</h4>
-          <div class="movement-buttons">
-            <button class="behavior-btn" data-behavior="Bht_Spin_360">360° Spin</button>
-            <button class="behavior-btn" data-behavior="Bht_Photo_pose_Curious">Curious Pose</button>
-            <button class="behavior-btn" data-behavior="Bht_Circle_motion">Circle Motion</button>
-            <button class="behavior-btn" data-behavior="Bht_Turn_Away">Turn Away</button>
-            <button class="behavior-btn" data-behavior="Bht_Turn_Back">Turn Back</button>
-            <button class="behavior-btn" data-behavior="Bht_Wait_Hug">Wait for Hug</button>
-          </div>
-        </div>
-        <div class="behavior-section">
-          <h4>Special Actions</h4>
-          <div class="special-buttons">
-            <button class="behavior-btn" data-behavior="Bht_Ice_Cream">Ice Cream</button>
-            <button class="behavior-btn" data-behavior="Bht_suckThroughTeeth">Suck Through Teeth</button>
-            <button class="behavior-btn" data-behavior="Bht_Vision_Check">Vision Check</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Clear_Throat">Clear Throat</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Gulp">Gulp</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Psst">Psst</button>
-            <button class="behavior-btn" data-behavior="Bht_Back_and_forth_arm_wave">🦈 Baby Shark Dance</button>
-          </div>
-        </div>
-        <div class="behavior-section">
-          <h4>Sleep & Rest</h4>
-          <div class="sleep-buttons">
-            <button class="behavior-btn" data-behavior="Bht_Vg_Snore_Light">Light Snore</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Snore_Heavy">Heavy Snore</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Shiver_Sustained">Shiver</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Hmm_Confused_Sustained">Confused Hmm</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Grunt_In_Transit_Sustained">Grunt</button>
-            <button class="behavior-btn" data-behavior="Bht_Vg_Nnn_Disagree">Disagree</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sound Effects Panel -->
-    <div class="sound-effects">
-      <h3>Sound Effects</h3>
-      <div class="sfx-grid">
-        <button class="sfx-btn" data-sound="sfxmm_incoming02">Incoming</button>
-        <button class="sfx-btn" data-sound="bee - buzz">Bee Buzz</button>
-        <button class="sfx-btn" data-sound="snake - sssssss">Snake Hiss</button>
-        <button class="sfx-btn" data-sound="sniff1">Sniff</button>
-        <button class="behavior-btn" data-behavior="Bht_raspberry">😜 Raspberry</button>
-        <button class="behavior-btn" data-behavior="Bht_raspberry_long">😜 Long Raspberry</button>
-      </div>
-      <div class="volume-control">
-        <label>SFX Volume</label>
-        <input type="range" id="sfx_volume" min="0" max="100" value="75" class="volume-slider">
-        <span id="volume_display">75%</span>
-      </div>
-    </div>
-
-    <!-- Vocal Gestures -->
-    <div class="vocal-gestures">
-      <h3>Vocal Gestures</h3>
-      <div class="vocal-grid">
-        <button class="behavior-btn" data-behavior="Bht_Vg_gasp">😱 Gasp</button>
-        <button class="behavior-btn" data-behavior="Bht_Vg_cough">😷 Cough</button>
-        <button class="behavior-btn" data-behavior="Bht_Vg_gulp">😅 Gulp</button>
-        <button class="behavior-btn" data-behavior="Bht_Vg_Clear_Throat">😤 Clear Throat</button>
-        <button class="behavior-btn" data-behavior="Bht_Wing_Flap">🐦 Wing Flap</button>
-        <button class="behavior-btn" data-behavior="Bht_Vg_Psst">🤫 Psst</button>
-      </div>
-    </div>
-
-    <!-- Speech Control -->
-    <div class="speech-control">
-      <h3>Speech Control</h3>
-      <div class="speech-options">
-        <div class="speech-mode">
-          <input type="radio" id="text_mode" name="speech_mode" value="text" checked>
-          <label for="text_mode">Text Mode</label>
-          <input type="radio" id="markup_mode" name="speech_mode" value="markup">
-          <label for="markup_mode">Markup Mode</label>
-        </div>
-        
-        <div class="text-input-section" id="text_input_section">
-          <textarea id="speech_text" placeholder="Enter what Moxie should say..." class="speech-input"></textarea>
-        </div>
-        
-        <div class="markup-input-section" id="markup_input_section" style="display: none;">
-          <textarea id="markup_text" placeholder="Enter markup XML..." class="markup-input"></textarea>
-        </div>
-        
-        <div class="speech-actions">
-          <button id="speak_button" class="btn btn-primary">🎤 Speak</button>
-          <button id="interrupt_button" class="btn btn-secondary">⏹️ Stop</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sequence Designer -->
-    <!-- SEQUENCE DESIGNER TEST MARKER -->
-    <div class="sequence-designer">
-      <h3>🎭 Sequence Designer</h3>
-      
-      <!-- Behavior Palette -->
-      <div class="palette-section">
-        <h4>Drag & Drop Library</h4>
-        <div class="behavior-palette">
-          <div class="palette-category">
-            <h5>Laughs & Vocal</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Belly" draggable="true">
-                😄 Belly Laugh
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Big" draggable="true">
-                😆 Big Laugh
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Big_Fourcount" draggable="true">
-                🤣 Four-Count Laugh
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Mischief" draggable="true">
-                😏 Mischief Laugh
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Laugh_Nervous" draggable="true">
-                😅 Nervous Laugh
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Gasp" draggable="true">
-                😱 Gasp
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Expressions & Reactions</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Oh_Eureka" draggable="true">
-                💡 Eureka!
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Ooo_Cringe" draggable="true">
-                😬 Cringe
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Ooo_Urgent" draggable="true">
-                🚨 Urgent
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Startled" draggable="true">
-                😲 Startled
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_sigh_relief" draggable="true">
-                😌 Sigh Relief
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_yawn_big" draggable="true">
-                😴 Big Yawn
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Movements & Poses</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Spin_360" draggable="true">
-                🌀 360° Spin
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Photo_pose_Curious" draggable="true">
-                🤔 Curious Pose
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Circle_motion" draggable="true">
-                💃 Circle Motion
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Turn_Away" draggable="true">
-                🔄 Turn Away
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Turn_Back" draggable="true">
-                ↩️ Turn Back
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Wait_Hug" draggable="true">
-                🤗 Wait for Hug
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Vocal Gestures</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_gasp" draggable="true">
-                😱 Gasp
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_cough" draggable="true">
-                😷 Cough
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_gulp" draggable="true">
-                😅 Gulp
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Clear_Throat" draggable="true">
-                😤 Clear Throat
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Wing_Flap" draggable="true">
-                🐦 Wing Flap
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Psst" draggable="true">
-                🤫 Psst
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Special Actions</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Ice_Cream" draggable="true">
-                🍦 Ice Cream
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_suckThroughTeeth" draggable="true">
-                🦷 Suck Through Teeth
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vision_Check" draggable="true">
-                👁️ Vision Check
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Gulp" draggable="true">
-                😅 Gulp
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Back_and_forth_arm_wave" draggable="true">
-                🦈 Baby Shark Dance
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Sleep & Rest</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Snore_Light" draggable="true">
-                😴 Light Snore
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Snore_Heavy" draggable="true">
-                💤 Heavy Snore
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Shiver_Sustained" draggable="true">
-                🥶 Shiver
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Hmm_Confused_Sustained" draggable="true">
-                🤔 Confused Hmm
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Grunt_In_Transit_Sustained" draggable="true">
-                😤 Grunt
-              </div>
-              <div class="draggable-item" data-type="behavior" data-value="Bht_Vg_Nnn_Disagree" draggable="true">
-                😐 Disagree
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Emotion Mixer - Moods</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="emotion_mood" data-value="happy" draggable="true">
-                😊 Happy
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="sad" draggable="true">
-                😢 Sad
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="excited" draggable="true">
-                🤩 Excited
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="calm" draggable="true">
-                😌 Calm
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="angry" draggable="true">
-                😠 Angry
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="surprised" draggable="true">
-                😲 Surprised
-              </div>
-              <div class="draggable-item" data-type="emotion_mood" data-value="neutral" draggable="true">
-                😐 Neutral
-              </div>
-            </div>
-          </div>
-
-          <div class="palette-category">
-            <h5>Emotion Mixer - Intensity</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="emotion_intensity" data-value="low" draggable="true">
-                🔅 Low Intensity (1-3)
-              </div>
-              <div class="draggable-item" data-type="emotion_intensity" data-value="medium" draggable="true">
-                💡 Medium Intensity (4-6)
-              </div>
-              <div class="draggable-item" data-type="emotion_intensity" data-value="high" draggable="true">
-                🔆 High Intensity (7-10)
-              </div>
-            </div>
-          </div>
-          
-          <div class="palette-category">
-            <h5>Speech & Sound</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="speech" data-value="" draggable="true">
-                💬 Speech
-              </div>
-              <div class="draggable-item" data-type="sound" data-value="sfxmm_incoming02" draggable="true">
-                🔊 Sound Effect
-              </div>
-            </div>
-          </div>
-          
-          <div class="palette-category">
-            <h5>Timing</h5>
-            <div class="palette-items">
-              <div class="draggable-item" data-type="pause" data-value="1.0" draggable="true">
-                ⏸️ Pause (1s)
-              </div>
-              <div class="draggable-item" data-type="pause" data-value="2.0" draggable="true">
-                ⏸️ Pause (2s)
-              </div>
-              <div class="draggable-item" data-type="pause" data-value="3.0" draggable="true">
-                ⏸️ Pause (3s)
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Sequence Timeline -->
-      <div class="timeline-section">
-        <h4>Sequence Timeline</h4>
-        <div class="sequence-timeline" id="sequence-timeline">
-          <div class="timeline-placeholder">Drag items here to build your sequence</div>
-        </div>
-      </div>
-      
-      <!-- Sequence Controls -->
-      <div class="sequence-controls">
-        <button id="play-sequence" class="btn btn-success" disabled>▶️ Play Sequence</button>
-        <button id="clear-sequence" class="btn btn-secondary">🗑️ Clear</button>
-        <button id="save-sequence" class="btn btn-info" disabled>💾 Save</button>
-        <button id="toggle-markup" class="btn btn-outline-warning">🔍 Show Markup</button>
-        <input type="text" id="sequence-name" placeholder="Sequence name..." class="sequence-name-input">
-      </div>
-      
-      <!-- Saved Sequences -->
-      <div class="saved-sequences-section">
-        <h4>Saved Sequences</h4>
-        <div id="saved-sequences-list" class="saved-sequences-list">
-          <div class="loading-message">Loading saved sequences...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preset Panel -->
-    <div class="preset-panel">
-      <h3>Presets & Macros</h3>
-      <div class="preset-buttons">
-        <button class="preset-btn" data-preset="greeting">👋 Greeting</button>
-        <button class="preset-btn" data-preset="party">🎉 Party Mode</button>
-        <button class="preset-btn" data-preset="calm">😌 Calm Down</button>
-        <button class="preset-btn" data-preset="energetic">⚡ Get Energetic</button>
-        <button class="preset-btn" data-preset="wake_up">🌅 Wake Up</button>
-        <button class="preset-btn" data-preset="birthday">🎂 Birthday</button>
-        <button class="preset-btn" data-preset="meditation">🧘 Meditation</button>
-        <button class="preset-btn" data-preset="breathing">🐋 Breathing</button>
-      </div>
-      <div class="macro-controls">
-        <button id="record_macro" class="btn btn-warning">🔴 Record Macro</button>
-        <button id="stop_macro" class="btn btn-secondary" disabled>⏹️ Stop Recording</button>
-        <button id="play_macro" class="btn btn-success" disabled>▶️ Play Last Macro</button>
-        <a href="{% url 'hive:animation_tester' object.pk %}" class="btn btn-info" target="_blank">🧪 Animation Tester</a>
-      </div>
-    </div>
-  </div>
 </div>
 
 <style>
-.dj-panel-container {
-  padding: 20px;
-  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-  min-height: 100vh;
-}
-
-.dj-panel {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
-  color: #ffffff;
-}
-
-.dj-panel > div {
-  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 5px 5px 15px rgba(0,0,0,0.3), -5px -5px 15px rgba(255,255,255,0.1);
-  border: 1px solid #333;
-}
-
-.status-section {
-  grid-column: 1 / -1;
-}
-
-.test-sequence {
-  grid-column: 1 / -1;
-  background: linear-gradient(145deg, #2d4a2d, #1a2e1a);
-  border: 2px solid #4a7c59;
-}
-
-.test-description {
-  margin: 10px 0;
-  color: #a8d8a8;
-  font-size: 14px;
-  text-align: center;
-}
-
-.btn-test-sequence {
-  width: 100%;
-  padding: 15px;
-  font-size: 18px;
-  font-weight: bold;
-  background: linear-gradient(145deg, #5cb85c, #449d44);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-}
-
-.btn-test-sequence:hover {
-  background: linear-gradient(145deg, #6cbf6c, #51a751);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-}
-
-.btn-test-sequence:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
-}
-
-/* Sequence Designer Styles */
-.sequence-designer {
-  grid-column: 1 / -1;
-  background: linear-gradient(145deg, #2d2d4a, #1a1a2e);
-  border: 2px solid #4a4a7c;
-}
-
-.palette-section {
-  margin-bottom: 20px;
-}
-
-.behavior-palette {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.palette-category {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.palette-category h5 {
-  color: #7c7cff;
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.palette-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.draggable-item {
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: grab;
-  font-size: 12px;
-  font-weight: bold;
-  user-select: none;
-  transition: all 0.2s ease;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-}
-
-/* Color-coded draggable items by type */
-.draggable-item[data-type="behavior"] {
-  background: linear-gradient(145deg, #ff6b6b, #e55555);
-  border: 1px solid #ff8888;
-}
-
-.draggable-item[data-type="emotion_mood"] {
-  background: linear-gradient(145deg, #4ecdc4, #44b5ae);
-  border: 1px solid #6ed9d1;
-}
-
-.draggable-item[data-type="emotion_intensity"] {
-  background: linear-gradient(145deg, #ffe66d, #e6cc5a);
-  border: 1px solid #ffeb7a;
-}
-
-.draggable-item[data-type="speech"] {
-  background: linear-gradient(145deg, #95e1d3, #85ccbf);
-  border: 1px solid #a8e6d8;
-}
-
-.draggable-item[data-type="sound"] {
-  background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
-  border: 1px solid #ffcfb0;
-}
-
-.draggable-item[data-type="pause"] {
-  background: linear-gradient(145deg, #a8e6cf, #97d4b8);
-  border: 1px solid #b8ebd5;
-}
-
-.draggable-item:not([data-type]), .draggable-item[data-type=""] {
-  background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
-  border: 1px solid #5a5a8c;
-}
-
-.draggable-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
-  filter: brightness(1.1);
-}
-
-.draggable-item:active {
-  cursor: grabbing;
-  transform: scale(0.95);
-}
-
-.draggable-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
-}
-
-.sequence-timeline.drag-over {
-  border-color: #7c7cff !important;
-  background: linear-gradient(145deg, #4a4a6a, #3a3a5a) !important;
-  box-shadow: 0 0 15px rgba(124, 124, 255, 0.5) !important;
-}
-
-.timeline-section {
-  margin-bottom: 20px;
-}
-
-.sequence-timeline {
-  min-height: 120px;
-  background: linear-gradient(145deg, #2c2c54, #1a1a2e);
-  border: 3px dashed #7c7cff;
-  border-radius: 12px;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  flex-wrap: nowrap;
-  transition: all 0.3s ease;
-  scrollbar-width: thin;
-  scrollbar-color: #7c7cff #2c2c54;
-}
-
-.sequence-timeline::-webkit-scrollbar {
-  height: 8px;
-}
-
-.sequence-timeline::-webkit-scrollbar-track {
-  background: #1a1a2e;
-  border-radius: 4px;
-}
-
-.sequence-timeline::-webkit-scrollbar-thumb {
-  background: linear-gradient(145deg, #7c7cff, #6b6bcc);
-  border-radius: 4px;
-}
-
-.sequence-timeline::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(145deg, #8c8cff, #7c7cff);
-}
-
-.sequence-timeline.drag-over {
-  background: linear-gradient(145deg, #3c3c84, #2a2a5e);
-  border-color: #9c9cff;
-  box-shadow: 0 0 20px rgba(156, 156, 255, 0.6);
-}
-
-.timeline-placeholder {
-  color: #7c7cff;
-  font-style: italic;
-  text-align: center;
-  width: 100%;
-  pointer-events: none;
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.timeline-item {
-  color: white;
-  padding: 12px 16px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  font-weight: bold;
-  position: relative;
-  min-width: 140px;
-  flex-shrink: 0;
-  box-shadow: 4px 4px 12px rgba(0,0,0,0.4);
-  cursor: grab;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.timeline-item:active {
-  cursor: grabbing;
-}
-
-.timeline-item.dragging {
-  opacity: 0.6;
-  transform: scale(0.95);
-}
-
-/* Color-coded timeline items by type */
-.timeline-item[data-type="behavior"] {
-  background: linear-gradient(145deg, #ff6b6b, #e55555);
-  border: 2px solid #ff8888;
-}
-
-.timeline-item[data-type="emotion_mood"] {
-  background: linear-gradient(145deg, #4ecdc4, #44b5ae);
-  border: 2px solid #6ed9d1;
-}
-
-.timeline-item[data-type="emotion_intensity"] {
-  background: linear-gradient(145deg, #ffe66d, #e6cc5a);
-  border: 2px solid #ffeb7a;
-}
-
-.timeline-item[data-type="set_emotion"] {
-  background: linear-gradient(145deg, #ff9a9e, #fad0c4);
-  border: 2px solid #ffb3ba;
-}
-
-.timeline-item[data-type="speech"] {
-  background: linear-gradient(145deg, #95e1d3, #85ccbf);
-  border: 2px solid #a8e6d8;
-}
-
-.timeline-item[data-type="sound"] {
-  background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
-  border: 2px solid #ffcfb0;
-}
-
-.timeline-item[data-type="pause"] {
-  background: linear-gradient(145deg, #a8e6cf, #97d4b8);
-  border: 2px solid #b8ebd5;
-}
-
-.timeline-item[data-type="default"], .timeline-item:not([data-type]) {
-  background: linear-gradient(145deg, #7c7cff, #6b6bcc);
-  border: 2px solid #9c9cff;
-}
-
-.timeline-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 16px rgba(0,0,0,0.5);
-  filter: brightness(1.1);
-}
-
-.timeline-item.drag-over-timeline {
-  border-color: #fff !important;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.7) !important;
-  transform: scale(1.05);
-}
-
-.timeline-item.dragging {
-  opacity: 0.6;
-  transform: scale(0.95);
-  cursor: grabbing;
-}
-
-.timeline-item:hover {
-  cursor: grab;
-}
-
-.timeline-item .item-number {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.timeline-item .remove-btn {
-  background: rgba(255, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 10px;
-  line-height: 1;
-  margin-left: auto;
-  transition: background 0.2s;
-}
-
-.timeline-item .remove-btn:hover {
-  background: rgba(255, 0, 0, 0.9);
-}
-
-.timeline-item .markup-display {
-  margin-top: 8px;
-  padding: 6px 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 10px;
-  color: #b0b0b0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  max-height: 60px;
-  overflow-y: auto;
-  word-break: break-all;
-  display: none;
-}
-
-.timeline-item .markup-display.show {
-  display: block;
-}
-
-.timeline-item .markup-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  border: none;
-  border-radius: 3px;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 8px;
-  line-height: 1;
-  transition: background 0.2s;
-  margin-left: 4px;
-}
-
-.timeline-item .markup-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.timeline-item .markup-toggle.active {
-  background: rgba(255, 215, 0, 0.3);
-  color: #ffd700;
-}
-
-.sequence-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.sequence-controls .btn {
-  font-size: 14px;
-  font-weight: bold;
-  padding: 10px 15px;
-}
-
-.sequence-name-input {
-  padding: 10px;
-  border-radius: 6px;
-  background: #3a3a3a;
-  color: white;
-  border: 1px solid #555;
-  font-size: 14px;
-  min-width: 200px;
-}
-
-.sequence-name-input:focus {
-  outline: none;
-  border-color: #7c7cff;
-  box-shadow: 0 0 5px rgba(124, 124, 255, 0.3);
-}
-
-/* Saved Sequences Styles */
-.saved-sequences-section {
-  margin-top: 20px;
-}
-
-.saved-sequences-section h4 {
-  color: #7c7cff;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-.saved-sequences-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 40px;
-}
-
-.saved-sequence-btn {
-  background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.saved-sequence-btn:hover {
-  background: linear-gradient(145deg, #5a5a8c, #4a4a7c);
-  transform: translateY(-1px);
-  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
-}
-
-.saved-sequence-btn .delete-sequence {
-  background: rgba(255, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 10px;
-  line-height: 1;
-  margin-left: 5px;
-}
-
-.saved-sequence-btn .delete-sequence:hover {
-  background: rgba(255, 0, 0, 0.9);
-}
-
-.loading-message {
-  color: #888;
-  font-style: italic;
-  padding: 10px;
-}
-
-.status-indicators {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.status-label {
-  font-weight: bold;
-  color: #ccc;
-}
-
-.action-grid, .behavior-grid, .sfx-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.action-btn, .behavior-btn, .sfx-btn, .preset-btn {
-  padding: 12px 8px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 3px 3px 8px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.1);
-  text-align: center;
-}
-
-.action-btn:hover, .behavior-btn:hover, .sfx-btn:hover, .preset-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 5px 5px 15px rgba(0,0,0,0.4), -3px -3px 12px rgba(255,255,255,0.15);
-}
-
-.action-btn:active, .behavior-btn:active, .sfx-btn:active, .preset-btn:active {
-  transform: translateY(1px);
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-}
-
-.celebrate { background: linear-gradient(145deg, #ff6b6b, #cc5555); }
-.dance { background: linear-gradient(145deg, #4ecdc4, #3ea39e); }
-.laugh { background: linear-gradient(145deg, #ffe66d, #ccb857); }
-.wave { background: linear-gradient(145deg, #95e1d3, #7ab5a8); }
-.point { background: linear-gradient(145deg, #a8e6cf, #86b89f); }
-.think { background: linear-gradient(145deg, #ffc3a0, #cc9c80); }
-.surprise { background: linear-gradient(145deg, #ff8b94, #cc6f76); }
-.bow { background: linear-gradient(145deg, #b4a7d6, #9086ab); }
-
-.emotion-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.emotion-channel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mood-selector {
-  padding: 10px;
-  border-radius: 8px;
-  background: #3a3a3a;
-  color: white;
-  border: 1px solid #555;
-  font-size: 14px;
-}
-
-.slider-container {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.emotion-slider, .volume-slider {
-  flex: 1;
-  height: 8px;
-  border-radius: 4px;
-  background: #3a3a3a;
-  outline: none;
-  -webkit-appearance: none;
-}
-
-.emotion-slider::-webkit-slider-thumb, .volume-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #ff6b6b, #cc5555);
-  cursor: pointer;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-}
-
-.emotion-help {
-  color: #aaa;
-  font-style: italic;
-  display: block;
-  margin-top: 5px;
-}
-
-#apply_emotion {
-  width: 100%;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.behavior-section h4 {
-  color: #ff6b6b;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.speech-control {
-  grid-column: 1 / -1;
-}
-
-.speech-mode {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.speech-input, .markup-input {
-  width: 100%;
-  height: 100px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #3a3a3a;
-  color: white;
-  border: 1px solid #555;
-  font-family: monospace;
-  font-size: 14px;
-  resize: vertical;
-}
-
-.speech-actions {
-  display: flex;
-  gap: 15px;
-  margin-top: 15px;
-  justify-content: center;
-}
-
-.preset-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.vocal-gestures {
-  background: #2c2c2c;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.vocal-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.macro-controls {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.macro-controls .btn {
-  font-size: 12px;
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-.macro-controls .btn-info {
-  background: linear-gradient(145deg, #17a2b8, #138496);
-  border: none;
-  color: white;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.macro-controls .btn-info:hover {
-  background: linear-gradient(145deg, #138496, #0f6674);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-h3 {
-  color: #ff6b6b;
-  margin-bottom: 15px;
-  text-align: center;
-  font-size: 18px;
-}
-
-h4 {
-  color: #4ecdc4;
-  font-size: 14px;
-}
-
-@media (max-width: 1200px) {
-  .dj-panel {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .dj-panel {
-    grid-template-columns: 1fr;
-  }
-  
-  .status-indicators {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
+    .dj-panel-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+        min-height: 100vh;
+    }
+
+    .dj-panel {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+        color: #ffffff;
+    }
+
+    .dj-panel > div {
+        background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow:
+            5px 5px 15px rgba(0, 0, 0, 0.3),
+            -5px -5px 15px rgba(255, 255, 255, 0.1);
+        border: 1px solid #333;
+    }
+
+    .status-section {
+        grid-column: 1 / -1;
+    }
+
+    .test-sequence {
+        grid-column: 1 / -1;
+        background: linear-gradient(145deg, #2d4a2d, #1a2e1a);
+        border: 2px solid #4a7c59;
+    }
+
+    .test-description {
+        margin: 10px 0;
+        color: #a8d8a8;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .btn-test-sequence {
+        width: 100%;
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        background: linear-gradient(145deg, #5cb85c, #449d44);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-test-sequence:hover {
+        background: linear-gradient(145deg, #6cbf6c, #51a751);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-test-sequence:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+    }
+
+    /* Sequence Designer Styles */
+    .sequence-designer {
+        grid-column: 1 / -1;
+        background: linear-gradient(145deg, #2d2d4a, #1a1a2e);
+        border: 2px solid #4a4a7c;
+    }
+
+    .palette-section {
+        margin-bottom: 20px;
+    }
+
+    .behavior-palette {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .palette-category {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .palette-category h5 {
+        color: #7c7cff;
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .palette-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .draggable-item {
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: grab;
+        font-size: 12px;
+        font-weight: bold;
+        user-select: none;
+        transition: all 0.2s ease;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Color-coded draggable items by type */
+    .draggable-item[data-type="behavior"] {
+        background: linear-gradient(145deg, #ff6b6b, #e55555);
+        border: 1px solid #ff8888;
+    }
+
+    .draggable-item[data-type="emotion_mood"] {
+        background: linear-gradient(145deg, #4ecdc4, #44b5ae);
+        border: 1px solid #6ed9d1;
+    }
+
+    .draggable-item[data-type="emotion_intensity"] {
+        background: linear-gradient(145deg, #ffe66d, #e6cc5a);
+        border: 1px solid #ffeb7a;
+    }
+
+    .draggable-item[data-type="speech"] {
+        background: linear-gradient(145deg, #95e1d3, #85ccbf);
+        border: 1px solid #a8e6d8;
+    }
+
+    .draggable-item[data-type="sound"] {
+        background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
+        border: 1px solid #ffcfb0;
+    }
+
+    .draggable-item[data-type="pause"] {
+        background: linear-gradient(145deg, #a8e6cf, #97d4b8);
+        border: 1px solid #b8ebd5;
+    }
+
+    .draggable-item:not([data-type]),
+    .draggable-item[data-type=""] {
+        background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
+        border: 1px solid #5a5a8c;
+    }
+
+    .draggable-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+        filter: brightness(1.1);
+    }
+
+    .draggable-item:active {
+        cursor: grabbing;
+        transform: scale(0.95);
+    }
+
+    .draggable-item.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+
+    .sequence-timeline.drag-over {
+        border-color: #7c7cff !important;
+        background: linear-gradient(145deg, #4a4a6a, #3a3a5a) !important;
+        box-shadow: 0 0 15px rgba(124, 124, 255, 0.5) !important;
+    }
+
+    .timeline-section {
+        margin-bottom: 20px;
+    }
+
+    .sequence-timeline {
+        min-height: 120px;
+        background: linear-gradient(145deg, #2c2c54, #1a1a2e);
+        border: 3px dashed #7c7cff;
+        border-radius: 12px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        transition: all 0.3s ease;
+        scrollbar-width: thin;
+        scrollbar-color: #7c7cff #2c2c54;
+    }
+
+    .sequence-timeline::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .sequence-timeline::-webkit-scrollbar-track {
+        background: #1a1a2e;
+        border-radius: 4px;
+    }
+
+    .sequence-timeline::-webkit-scrollbar-thumb {
+        background: linear-gradient(145deg, #7c7cff, #6b6bcc);
+        border-radius: 4px;
+    }
+
+    .sequence-timeline::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(145deg, #8c8cff, #7c7cff);
+    }
+
+    .sequence-timeline.drag-over {
+        background: linear-gradient(145deg, #3c3c84, #2a2a5e);
+        border-color: #9c9cff;
+        box-shadow: 0 0 20px rgba(156, 156, 255, 0.6);
+    }
+
+    .timeline-placeholder {
+        color: #7c7cff;
+        font-style: italic;
+        text-align: center;
+        width: 100%;
+        pointer-events: none;
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    .timeline-item {
+        color: white;
+        padding: 12px 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        font-weight: bold;
+        position: relative;
+        min-width: 140px;
+        flex-shrink: 0;
+        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
+        cursor: grab;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+
+    .timeline-item:active {
+        cursor: grabbing;
+    }
+
+    .timeline-item.dragging {
+        opacity: 0.6;
+        transform: scale(0.95);
+    }
+
+    /* Color-coded timeline items by type */
+    .timeline-item[data-type="behavior"] {
+        background: linear-gradient(145deg, #ff6b6b, #e55555);
+        border: 2px solid #ff8888;
+    }
+
+    .timeline-item[data-type="emotion_mood"] {
+        background: linear-gradient(145deg, #4ecdc4, #44b5ae);
+        border: 2px solid #6ed9d1;
+    }
+
+    .timeline-item[data-type="emotion_intensity"] {
+        background: linear-gradient(145deg, #ffe66d, #e6cc5a);
+        border: 2px solid #ffeb7a;
+    }
+
+    .timeline-item[data-type="set_emotion"] {
+        background: linear-gradient(145deg, #ff9a9e, #fad0c4);
+        border: 2px solid #ffb3ba;
+    }
+
+    .timeline-item[data-type="speech"] {
+        background: linear-gradient(145deg, #95e1d3, #85ccbf);
+        border: 2px solid #a8e6d8;
+    }
+
+    .timeline-item[data-type="sound"] {
+        background: linear-gradient(145deg, #ffc3a0, #e6ad8a);
+        border: 2px solid #ffcfb0;
+    }
+
+    .timeline-item[data-type="pause"] {
+        background: linear-gradient(145deg, #a8e6cf, #97d4b8);
+        border: 2px solid #b8ebd5;
+    }
+
+    .timeline-item[data-type="default"],
+    .timeline-item:not([data-type]) {
+        background: linear-gradient(145deg, #7c7cff, #6b6bcc);
+        border: 2px solid #9c9cff;
+    }
+
+    .timeline-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.5);
+        filter: brightness(1.1);
+    }
+
+    .timeline-item.drag-over-timeline {
+        border-color: #fff !important;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.7) !important;
+        transform: scale(1.05);
+    }
+
+    .timeline-item.dragging {
+        opacity: 0.6;
+        transform: scale(0.95);
+        cursor: grabbing;
+    }
+
+    .timeline-item:hover {
+        cursor: grab;
+    }
+
+    .timeline-item .item-number {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .timeline-item .remove-btn {
+        background: rgba(255, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        margin-left: auto;
+        transition: background 0.2s;
+    }
+
+    .timeline-item .remove-btn:hover {
+        background: rgba(255, 0, 0, 0.9);
+    }
+
+    .timeline-item .markup-display {
+        margin-top: 8px;
+        padding: 6px 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        font-family: "Consolas", "Monaco", monospace;
+        font-size: 10px;
+        color: #b0b0b0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        max-height: 60px;
+        overflow-y: auto;
+        word-break: break-all;
+        display: none;
+    }
+
+    .timeline-item .markup-display.show {
+        display: block;
+    }
+
+    .timeline-item .markup-toggle {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border: none;
+        border-radius: 3px;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 8px;
+        line-height: 1;
+        transition: background 0.2s;
+        margin-left: 4px;
+    }
+
+    .timeline-item .markup-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .timeline-item .markup-toggle.active {
+        background: rgba(255, 215, 0, 0.3);
+        color: #ffd700;
+    }
+
+    .sequence-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .sequence-controls .btn {
+        font-size: 14px;
+        font-weight: bold;
+        padding: 10px 15px;
+    }
+
+    .sequence-name-input {
+        padding: 10px;
+        border-radius: 6px;
+        background: #3a3a3a;
+        color: white;
+        border: 1px solid #555;
+        font-size: 14px;
+        min-width: 200px;
+    }
+
+    .sequence-name-input:focus {
+        outline: none;
+        border-color: #7c7cff;
+        box-shadow: 0 0 5px rgba(124, 124, 255, 0.3);
+    }
+
+    /* Saved Sequences Styles */
+    .saved-sequences-section {
+        margin-top: 20px;
+    }
+
+    .saved-sequences-section h4 {
+        color: #7c7cff;
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+
+    .saved-sequences-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 40px;
+    }
+
+    .saved-sequence-btn {
+        background: linear-gradient(145deg, #4a4a7c, #3a3a6c);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .saved-sequence-btn:hover {
+        background: linear-gradient(145deg, #5a5a8c, #4a4a7c);
+        transform: translateY(-1px);
+        box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .saved-sequence-btn .delete-sequence {
+        background: rgba(255, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        margin-left: 5px;
+    }
+
+    .saved-sequence-btn .delete-sequence:hover {
+        background: rgba(255, 0, 0, 0.9);
+    }
+
+    .loading-message {
+        color: #888;
+        font-style: italic;
+        padding: 10px;
+    }
+
+    .status-indicators {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-label {
+        font-weight: bold;
+        color: #ccc;
+    }
+
+    .action-grid,
+    .behavior-grid,
+    .sfx-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .action-btn,
+    .behavior-btn,
+    .sfx-btn,
+    .preset-btn {
+        padding: 12px 8px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow:
+            3px 3px 8px rgba(0, 0, 0, 0.3),
+            -2px -2px 8px rgba(255, 255, 255, 0.1);
+        text-align: center;
+    }
+
+    .action-btn:hover,
+    .behavior-btn:hover,
+    .sfx-btn:hover,
+    .preset-btn:hover {
+        transform: translateY(-2px);
+        box-shadow:
+            5px 5px 15px rgba(0, 0, 0, 0.4),
+            -3px -3px 12px rgba(255, 255, 255, 0.15);
+    }
+
+    .action-btn:active,
+    .behavior-btn:active,
+    .sfx-btn:active,
+    .preset-btn:active {
+        transform: translateY(1px);
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .celebrate {
+        background: linear-gradient(145deg, #ff6b6b, #cc5555);
+    }
+    .dance {
+        background: linear-gradient(145deg, #4ecdc4, #3ea39e);
+    }
+    .laugh {
+        background: linear-gradient(145deg, #ffe66d, #ccb857);
+    }
+    .wave {
+        background: linear-gradient(145deg, #95e1d3, #7ab5a8);
+    }
+    .point {
+        background: linear-gradient(145deg, #a8e6cf, #86b89f);
+    }
+    .think {
+        background: linear-gradient(145deg, #ffc3a0, #cc9c80);
+    }
+    .surprise {
+        background: linear-gradient(145deg, #ff8b94, #cc6f76);
+    }
+    .bow {
+        background: linear-gradient(145deg, #b4a7d6, #9086ab);
+    }
+
+    .emotion-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .emotion-channel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .mood-selector {
+        padding: 10px;
+        border-radius: 8px;
+        background: #3a3a3a;
+        color: white;
+        border: 1px solid #555;
+        font-size: 14px;
+    }
+
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .emotion-slider,
+    .volume-slider {
+        flex: 1;
+        height: 8px;
+        border-radius: 4px;
+        background: #3a3a3a;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .emotion-slider::-webkit-slider-thumb,
+    .volume-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #ff6b6b, #cc5555);
+        cursor: pointer;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .emotion-help {
+        color: #aaa;
+        font-style: italic;
+        display: block;
+        margin-top: 5px;
+    }
+
+    #apply_emotion {
+        width: 100%;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .behavior-section h4 {
+        color: #ff6b6b;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .speech-control {
+        grid-column: 1 / -1;
+    }
+
+    .speech-mode {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+
+    .speech-input,
+    .markup-input {
+        width: 100%;
+        height: 100px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #3a3a3a;
+        color: white;
+        border: 1px solid #555;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+    }
+
+    .speech-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        justify-content: center;
+    }
+
+    .preset-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vocal-gestures {
+        background: #2c2c2c;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .vocal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .macro-controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .macro-controls .btn {
+        font-size: 12px;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .macro-controls .btn-info {
+        background: linear-gradient(145deg, #17a2b8, #138496);
+        border: none;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .macro-controls .btn-info:hover {
+        background: linear-gradient(145deg, #138496, #0f6674);
+        transform: translateY(-1px);
+    }
+
+    .test-panel {
+        margin-top: 20px;
+        padding: 20px;
+        background: linear-gradient(145deg, #2c3e50, #34495e);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .test-panel h3 {
+        color: #ecf0f1;
+        margin-bottom: 15px;
+        font-size: 18px;
+        text-align: center;
+    }
+
+    .test-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+
+    .test-status {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .test-status p {
+        margin: 5px 0;
+    }
+
+    .test-status small {
+        color: #bdc3c7;
+    }
+
+    #test_status {
+        font-weight: bold;
+        color: #2ecc71;
+    }
+
+    h3 {
+        color: #ff6b6b;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 18px;
+    }
+
+    h4 {
+        color: #4ecdc4;
+        font-size: 14px;
+    }
+
+    /* DJMIX Panel Styles */
+    .djmix-panel {
+        background: linear-gradient(145deg, #2d2d2d, #1a1a2e);
+        border: 2px solid #ff6b6b;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .djmix-panel h3 {
+        color: #ff6b6b;
+        text-align: center;
+        text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        font-size: 20px;
+    }
+
+    .djmix-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .djmix-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+
+    .djmix-section h4 {
+        color: #ff6b6b;
+        text-align: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .djmix-description {
+        color: #cccccc;
+        text-align: center;
+        font-size: 0.9em;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background: rgba(255, 107, 107, 0.08);
+        border-radius: 8px;
+        border-left: 4px solid #ff6b6b;
+    }
+
+    .djmix-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .djmix-btn {
+        background: linear-gradient(145deg, #ff6b6b, #cc5555) !important;
+        border: 1px solid #ff8888 !important;
+        color: white !important;
+        font-size: 11px !important;
+        padding: 8px 6px !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    }
+
+    .djmix-btn:hover {
+        background: linear-gradient(145deg, #ff8888, #ff6b6b) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.6);
+    }
+
+    .djmix-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .mix-status {
+        background: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 5px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: #ccc;
+        text-align: center;
+        min-height: 20px;
+    }
+
+    .djmix-btn.active {
+        background: #4a9eff !important;
+        box-shadow: 0 0 10px rgba(74, 158, 255, 0.3);
+    }
+
+    .mix-info {
+        background: rgba(255, 107, 107, 0.1);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-top: 10px;
+    }
+
+    .mix-info small {
+        color: #cccccc;
+        font-size: 0.8em;
+        line-height: 1.4;
+    }
+
+    .mix-slider-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mix-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: #3a3a3a;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .mix-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #ff6b6b, #cc5555);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    }
+
+    @media (max-width: 1200px) {
+        .djmix-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .djmix-buttons {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .djmix-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .djmix-panel {
+            padding: 15px;
+        }
+
+        .djmix-description {
+            font-size: 0.85em;
+            padding: 6px 12px;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .dj-panel {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dj-panel {
+            grid-template-columns: 1fr;
+        }
+
+        .status-indicators {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
 </style>
 
 <script>
-let djEnabled = false;
-let isRecordingMacro = false;
-let currentMacro = [];
-
-// DJ Mode Control
-function setDJMode(enabled) {
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: {'command': enabled ? "enable" : "disable"},
-    dataType: 'json'
-  }).always(function() {
-    setTimeout(refreshDJStatus, 100);
-  });
-}
-
-// Refresh DJ panel status
-function refreshDJStatus() {
-  $.ajax({
-    type: 'GET',
-    url: "{% url 'hive:dj_api' object.pk %}",
-    dataType: "json"
-  }).done(function(data) {
-    // Update connection status
-    if (data["online"]) {
-      $("#moxie_state")
-        .removeClass("text-bg-danger")
-        .addClass("text-bg-success")
-        .text("Online");
-    } else {
-      $("#moxie_state")
-        .removeClass("text-bg-success")
-        .addClass("text-bg-danger")
-        .text("Offline");
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1),
+                    );
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 
-    // Update DJ mode status
-    if (data["dj_enabled"]) {
-      $("#dj_state")
-        .removeClass("text-bg-warning")
-        .addClass("text-bg-success")
-        .text("ACTIVE");
-      
-      $("#dj_button")
-        .removeClass("btn-success")
-        .addClass("btn-danger")
-        .text("Stop DJ Mode")
-        .off("click").on("click", function() { setDJMode(false); });
-        
-      djEnabled = true;
-    } else {
-      $("#dj_state")
-        .removeClass("text-bg-success")
-        .addClass("text-bg-warning")
-        .text("STANDBY");
-      
-      $("#dj_button")
-        .removeClass("btn-danger")
-        .addClass("btn-success")
-        .text("Start DJ Mode")
-        .off("click").on("click", function() { setDJMode(true); });
-        
-      djEnabled = false;
+    const csrftoken = getCookie("csrftoken");
+
+    function csrfSafeMethod(method) {
+        return /^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
     }
-  }).always(function() {
-    setTimeout(refreshDJStatus, 2000);
-  });
-}
 
-// Send DJ command
-function sendDJCommand(command, params = {}) {
-  console.log('Sending DJ command:', command, params);
-  
-  if (!djEnabled && command !== 'enable' && command !== 'disable') {
-    console.warn('DJ Mode not enabled, but allowing command:', command);
-    // Don't block commands, just warn - let the backend handle validation
-  }
-  
-  const data = { command: command, ...params };
-  console.log('Full data being sent:', data);
-  
-  if (isRecordingMacro) {
-    currentMacro.push(data);
-    console.log('Added to macro recording:', data);
-  }
-  
-  // Use the new CSRF-exempt endpoint for commands
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: data,
-    dataType: 'json',
-    beforeSend: function() {
-      console.log('Sending AJAX request for command:', command);
-    },
-    success: function(response) {
-      console.log('DJ command success:', command, response);
-      if (response.error) {
-        console.error('Backend returned error:', response.error);
-        alert('Command failed: ' + response.error);
-      }
-    },
-    error: function(xhr, status, error) {
-      console.error('Failed to send DJ command:', command, status, error);
-      console.error('Response text:', xhr.responseText);
-      alert('Failed to send command: ' + error + ' (Status: ' + status + ')');
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        },
+    });
+
+    let djEnabled = false;
+    let isRecordingMacro = false;
+    let currentMacro = [];
+
+    // DJ Mode Control
+    function setDJMode(enabled) {
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: { command: enabled ? "enable" : "disable" },
+            dataType: "json",
+        }).always(function () {
+            setTimeout(refreshDJStatus, 100);
+        });
     }
-  });
-}
 
-// Quick Actions - Use delegated event handling
-$(document).on('click', '.action-btn', function(e) {
-  e.preventDefault();
-  console.log('Quick action clicked:', this);
-  console.log('Element classes:', $(this).attr('class'));
-  const action = $(this).data('action');
-  console.log('Action data:', action);
-  
-  if (!action) {
-    console.error('No action data found on button:', this);
-    return;
-  }
-  
-  sendDJCommand('quick_action', { action: action });
-});
+    // Refresh DJ panel status
+    function refreshDJStatus() {
+        $.ajax({
+            type: "GET",
+            url: "{% url 'hive:dj_api_safe' object.pk %}",
+            dataType: "json",
+        })
+            .done(function (data) {
+                // Update connection status
+                if (data["online"]) {
+                    $("#moxie_state")
+                        .removeClass("text-bg-danger")
+                        .addClass("text-bg-success")
+                        .text("Online");
+                } else {
+                    $("#moxie_state")
+                        .removeClass("text-bg-success")
+                        .addClass("text-bg-danger")
+                        .text("Offline");
+                }
 
-// Behavior Controls - Use delegated event handling
-$(document).on('click', '.behavior-btn', function(e) {
-  e.preventDefault();
-  console.log('Behavior button clicked:', this);
-  console.log('Element classes:', $(this).attr('class'));
-  const behavior = $(this).data('behavior');
-  console.log('Behavior data:', behavior);
-  
-  if (!behavior) {
-    console.error('No behavior data found on button:', this);
-    return;
-  }
-  
-  sendDJCommand('behavior', { behavior_name: behavior });
-});
+                // Update DJ mode status
+                if (data["dj_enabled"]) {
+                    $("#dj_state")
+                        .removeClass("text-bg-warning")
+                        .addClass("text-bg-success")
+                        .text("ACTIVE");
 
-// Sound Effects - Use delegated event handling
-$(document).on('click', '.sfx-btn', function(e) {
-  e.preventDefault();
-  console.log('Sound effect clicked:', this);
-  const sound = $(this).data('sound');
-  const volume = $('#sfx_volume').val() / 100;
-  console.log('Sound data:', sound, 'Volume:', volume);
-  
-  if (!sound) {
-    console.error('No sound data found on button:', this);
-    return;
-  }
-  
-  sendDJCommand('sound_effect', { sound_name: sound, volume: volume });
-});
+                    $("#dj_button")
+                        .removeClass("btn-success")
+                        .addClass("btn-danger")
+                        .text("Stop DJ Mode")
+                        .off("click")
+                        .on("click", function () {
+                            setDJMode(false);
+                        });
 
-// Speech Control
-$('#speak_button').on('click', function() {
-  const isMarkup = $('input[name="speech_mode"]:checked').val() === 'markup';
-  const text = isMarkup ? '' : $('#speech_text').val().trim();
-  const markup = isMarkup ? $('#markup_text').val().trim() : '';
-  const mood = $('#mood_selector').val();
-  const intensity = $('#intensity_slider').val() / 100;
-  
-  if ((!text && !markup) || (isMarkup && !markup) || (!isMarkup && !text)) {
-    alert('Please enter some text or markup to speak!');
-    return;
-  }
-  
-  sendDJCommand('speak', {
-    text: text,
-    markup: markup,
-    mood: mood,
-    intensity: intensity
-  });
-});
+                    djEnabled = true;
+                } else {
+                    $("#dj_state")
+                        .removeClass("text-bg-success")
+                        .addClass("text-bg-warning")
+                        .text("STANDBY");
 
-// Emotion Mixer - Apply emotion immediately to robot
-$('#apply_emotion').on('click', function() {
-  const mood = $('#mood_selector').val();
-  const intensity = $('#intensity_slider').val() / 100;
-  
-  console.log('Applying emotion:', mood, 'intensity:', intensity);
-  
-  // Send emotion command similar to puppet mode
-  sendDJCommand('set_emotion', {
-    mood: mood,
-    intensity: intensity
-  });
-  
-  // Visual feedback
-  const btn = $(this);
-  const originalText = btn.text();
-  btn.text('✓ Applied!').prop('disabled', true);
-  
-  setTimeout(() => {
-    btn.text(originalText).prop('disabled', false);
-  }, 1500);
-});
+                    $("#dj_button")
+                        .removeClass("btn-danger")
+                        .addClass("btn-success")
+                        .text("Start DJ Mode")
+                        .off("click")
+                        .on("click", function () {
+                            setDJMode(true);
+                        });
 
-$('#interrupt_button').on('click', function() {
-  sendDJCommand('interrupt');
-});
+                    djEnabled = false;
+                }
+            })
+            .always(function () {
+                setTimeout(refreshDJStatus, 2000);
+            });
+    }
 
-// Speech mode toggle
-$('input[name="speech_mode"]').on('change', function() {
-  const isMarkup = $(this).val() === 'markup';
-  if (isMarkup) {
-    $('#text_input_section').hide();
-    $('#markup_input_section').show();
-  } else {
-    $('#text_input_section').show();
-    $('#markup_input_section').hide();
-  }
-});
+    // Send DJ command
+    function sendDJCommand(command, params = {}) {
+        console.log("Sending DJ command:", command, params);
 
-// Intensity slider display
-$('#intensity_slider').on('input', function() {
-  $('#intensity_display').text($(this).val() + '%');
-});
+        if (!djEnabled && command !== "enable" && command !== "disable") {
+            console.warn("DJ Mode not enabled, but allowing command:", command);
+            // Don't block commands, just warn - let the backend handle validation
+        }
 
-$('#sfx_volume').on('input', function() {
-  $('#volume_display').text($(this).val() + '%');
-});
+        const data = { command: command, ...params };
+        console.log("Full data being sent:", data);
 
-// Preset actions - Use delegated event handling
-$(document).on('click', '.preset-btn', function(e) {
-  e.preventDefault();
-  console.log('Preset button clicked:', this);
-  const preset = $(this).data('preset');
-  console.log('Preset data:', preset);
-  
-  if (!preset) {
-    console.error('No preset data found on button:', this);
-    return;
-  }
-  
-  sendDJCommand('preset', { preset_name: preset });
-});
+        if (isRecordingMacro) {
+            currentMacro.push(data);
+            console.log("Added to macro recording:", data);
+        }
 
-// Welcome Test Sequence
-$('#welcome_test_btn').on('click', function() {
-  console.log('Welcome test sequence triggered');
-  // Add visual feedback
-  $(this).prop('disabled', true).text('Running...');
-  
-  sendDJCommand('sequence', { sequence_name: 'welcome_test' });
-  
-  // Re-enable button after a delay
-  setTimeout(() => {
-    $(this).prop('disabled', false).text('▶️ Run Welcome Test');
-  }, 3000);
-});
+        // Send commands through the DJ endpoint
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: data,
+            dataType: "json",
+            beforeSend: function () {
+                console.log("Sending AJAX request for command:", command);
+            },
+            success: function (response) {
+                console.log("DJ command success:", command, response);
+                if (response.error) {
+                    console.error("Backend returned error:", response.error);
+                    alert("Command failed: " + response.error);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error(
+                    "Failed to send DJ command:",
+                    command,
+                    status,
+                    error,
+                );
+                console.error("Response text:", xhr.responseText);
+                alert(
+                    "Failed to send command: " +
+                        error +
+                        " (Status: " +
+                        status +
+                        ")",
+                );
+            },
+        });
+    }
 
-// Sequence Designer Variables
-let currentSequence = [];
-let draggedItem = null;
-let showMarkupMode = false;
-let draggedTimelineItem = null;
-let draggedTimelineIndex = null;
+    // Quick Actions - Use delegated event handling
+    $(document).on("click", ".action-btn", function (e) {
+        e.preventDefault();
+        console.log("Quick action clicked:", this);
+        console.log("Element classes:", $(this).attr("class"));
+        const action = $(this).data("action");
+        console.log("Action data:", action);
 
-// Drag and Drop Functionality
-$(document).on('dragstart', '.draggable-item', function(e) {
-  draggedItem = $(this);
-  console.log('Drag started:', draggedItem.data());
-  $(this).addClass('dragging');
-  e.originalEvent.dataTransfer.effectAllowed = 'copy';
-  // Add data to transfer for debugging
-  e.originalEvent.dataTransfer.setData('text/plain', JSON.stringify(draggedItem.data()));
-});
+        if (!action) {
+            console.error("No action data found on button:", this);
+            return;
+        }
 
-$(document).on('dragover', '.sequence-timeline', function(e) {
-  e.preventDefault();
-  e.originalEvent.dataTransfer.dropEffect = 'copy';
-  $(this).addClass('drag-over');
-});
+        sendDJCommand("quick_action", { action: action });
+    });
 
-$(document).on('dragleave', '.sequence-timeline', function(e) {
-  $(this).removeClass('drag-over');
-});
+    // Behavior Controls - Use delegated event handling
+    $(document).on("click", ".behavior-btn", function (e) {
+        e.preventDefault();
+        console.log("Behavior button clicked:", this);
+        console.log("Element classes:", $(this).attr("class"));
+        const behavior = $(this).data("behavior");
+        console.log("Behavior data:", behavior);
 
-$(document).on('dragend', '.draggable-item', function(e) {
-  $(this).removeClass('dragging');
-  draggedItem = null;
-});
+        if (!behavior) {
+            console.error("No behavior data found on button:", this);
+            return;
+        }
 
-$(document).on('drop', '.sequence-timeline', function(e) {
-  e.preventDefault();
-  $(this).removeClass('drag-over');
-  $('.draggable-item').removeClass('dragging');
-  
-  console.log('Drop event triggered on timeline container');
-  console.log('draggedItem (from library):', !!draggedItem);
-  console.log('draggedTimelineItem (reordering):', !!draggedTimelineItem);
-  
-  // Only handle library items being dropped, not timeline reordering
-  if (draggedItem && !draggedTimelineItem) {
-    console.log('Processing dropped item:', draggedItem.data());
-    const itemData = {
-      type: draggedItem.data('type'),
-      value: draggedItem.data('value'),
-      display: draggedItem.text().trim()
-    };
-    
-    // Handle special cases for speech
-    if (itemData.type === 'speech') {
-      console.log('Prompting for speech text');
-      const text = prompt('Enter speech text:', 'Hello there!');
-      if (text === null || text.trim() === '') {
-        console.log('Speech input cancelled or empty');
+        sendDJCommand("behavior", { behavior_name: behavior });
+    });
+
+    // Sound Effects - Use delegated event handling
+    $(document).on("click", ".sfx-btn", function (e) {
+        e.preventDefault();
+        console.log("Sound effect clicked:", this);
+        const sound = $(this).data("sound");
+        const volume = $("#sfx_volume").val() / 100;
+        console.log("Sound data:", sound, "Volume:", volume);
+
+        if (!sound) {
+            console.error("No sound data found on button:", this);
+            return;
+        }
+
+        sendDJCommand("sound_effect", { sound_name: sound, volume: volume });
+    });
+
+    // Mood Control - Use delegated event handling
+    $(document).on("click", ".mood-btn", function (e) {
+        e.preventDefault();
+        console.log("Mood button clicked:", this);
+
+        const mood = $(this).data("mood");
+        const intensity = $(this).data("intensity");
+
+        if (mood === undefined || intensity === undefined) {
+            console.error("No mood/intensity specified for button");
+            return;
+        }
+
+        sendDJCommand("set_emotion", { mood: mood, intensity: intensity });
+    });
+
+    // Custom Markup - Use delegated event handling
+    $(document).on("click", ".custom-markup-btn", function (e) {
+        e.preventDefault();
+        console.log("Custom markup button clicked:", this);
+
+        const markup = $(this).data("markup");
+
+        if (!markup) {
+            console.error("No markup specified for button");
+            return;
+        }
+
+        sendDJCommand("custom_markup", { markup: markup });
+    });
+
+    // DJ MIX Commands - Combined audio + dance behavior
+    $(document).on("click", ".djmix-btn[data-mix-command]", function (e) {
+        e.preventDefault();
+        console.log("DJ MIX button clicked:", this);
+
+        const mixCommandKey = $(this).data("mix-command");
+
+        if (!mixCommandKey) {
+            console.error("No mix command key found on button:", this);
+            return;
+        }
+
+        // Remove active class from all DJ mix buttons
+        $(".djmix-btn[data-mix-command]").removeClass("active");
+
+        // Add active class to clicked button
+        $(this).addClass("active");
+
+        // Update current mix info display
+        const mixName = $(this).text().trim();
+        $("#current_mix_info").text(`Playing: ${mixName}`);
+
+        console.log("Executing DJ MIX command:", mixCommandKey);
+        sendDJCommand("dj_mix", { mix_command_key: mixCommandKey });
+    });
+
+    // Stop current DJ mix / audio
+    $(document).on("click", ".djmix-stop-btn", function (e) {
+        e.preventDefault();
+        console.log("DJ mix stop button clicked");
+
+        // Send comprehensive stop commands using custom markup
+        const stopAudioMarkup =
+            '<mark name="cmd:stop,data:{+channel+:1,+fadeOutTime+:0.5}"/>';
+        const interruptBehaviorMarkup = '<mark name="cmd:interrupt"/>';
+        const combinedStopMarkup = stopAudioMarkup + interruptBehaviorMarkup;
+
+        sendDJCommand("custom_markup", { markup: combinedStopMarkup });
+
+        // Also send interrupt command as backup
+        sendDJCommand("interrupt");
+
+        // Update UI to show stopped state
+        $("#current_mix_info").text("No mix playing");
+        $(".djmix-btn").removeClass("active");
+    });
+
+    // Interrupt current DJ mix
+    $(document).on("click", "#interrupt_mix", function (e) {
+        e.preventDefault();
+        console.log("DJ mix interrupt button clicked");
+
+        // Send comprehensive interrupt commands using custom markup
+        const stopAudioMarkup =
+            '<mark name="cmd:stop,data:{+channel+:1,+fadeOutTime+:0.2}"/>';
+        const interruptBehaviorMarkup = '<mark name="cmd:interrupt"/>';
+        const combinedInterruptMarkup =
+            stopAudioMarkup + interruptBehaviorMarkup;
+
+        sendDJCommand("custom_markup", { markup: combinedInterruptMarkup });
+
+        // Also send interrupt command as backup
+        sendDJCommand("interrupt");
+
+        // Update UI to show interrupted state
+        $("#current_mix_info").text("Mix interrupted");
+        $(".djmix-btn").removeClass("active");
+    });
+
+    // Console log to verify DJ MIX section is present
+    console.log("Checking for DJ MIX section...");
+    $(document).ready(function () {
+        const djmixPanel = $(".djmix-panel");
+        console.log("DJ MIX panel found:", djmixPanel.length > 0);
+        if (djmixPanel.length > 0) {
+            console.log(
+                "DJ MIX panel HTML:",
+                djmixPanel.html().substring(0, 200) + "...",
+            );
+        }
+
+        const djmixButtons = $(".djmix-btn[data-mix-command]");
+        console.log("DJ MIX buttons found:", djmixButtons.length);
+        djmixButtons.each(function (index) {
+            console.log(
+                `DJ MIX button ${index + 1}:`,
+                $(this).data("mix-command"),
+                $(this).text().trim(),
+            );
+        });
+    });
+
+    // Speech Control
+    $("#speak_button").on("click", function () {
+        const isMarkup =
+            $('input[name="speech_mode"]:checked').val() === "markup";
+        const text = isMarkup ? "" : $("#speech_text").val().trim();
+        const markup = isMarkup ? $("#markup_text").val().trim() : "";
+        const mood = $("#mood_selector").val();
+        const intensity = $("#intensity_slider").val() / 100;
+
+        if (
+            (!text && !markup) ||
+            (isMarkup && !markup) ||
+            (!isMarkup && !text)
+        ) {
+            alert("Please enter some text or markup to speak!");
+            return;
+        }
+
+        sendDJCommand("speak", {
+            text: text,
+            markup: markup,
+            mood: mood,
+            intensity: intensity,
+        });
+    });
+
+    // Emotion Mixer - Apply emotion immediately to robot
+    $("#apply_emotion").on("click", function () {
+        const mood = $("#mood_selector").val();
+        const intensity = $("#intensity_slider").val() / 100;
+
+        console.log("Applying emotion:", mood, "intensity:", intensity);
+
+        // Send emotion command similar to puppet mode
+        sendDJCommand("set_emotion", {
+            mood: mood,
+            intensity: intensity,
+        });
+
+        // Visual feedback
+        const btn = $(this);
+        const originalText = btn.text();
+        btn.text("✓ Applied!").prop("disabled", true);
+
+        setTimeout(() => {
+            btn.text(originalText).prop("disabled", false);
+        }, 1500);
+    });
+
+    $("#interrupt_button").on("click", function () {
+        sendDJCommand("interrupt");
+    });
+
+    // Speech mode toggle
+    $('input[name="speech_mode"]').on("change", function () {
+        const isMarkup = $(this).val() === "markup";
+        if (isMarkup) {
+            $("#text_input_section").hide();
+            $("#markup_input_section").show();
+        } else {
+            $("#text_input_section").show();
+            $("#markup_input_section").hide();
+        }
+    });
+
+    // Intensity slider display
+    $("#intensity_slider").on("input", function () {
+        $("#intensity_display").text($(this).val() + "%");
+    });
+
+    $("#sfx_volume").on("input", function () {
+        $("#volume_display").text($(this).val() + "%");
+    });
+
+    // DJMIX Level slider display
+    $("#djmix_level").on("input", function () {
+        $("#djmix_level_display").text($(this).val() + "%");
+    });
+
+    // Preset actions - Use delegated event handling
+    $(document).on("click", ".preset-btn", function (e) {
+        e.preventDefault();
+        console.log("Preset button clicked:", this);
+        const preset = $(this).data("preset");
+        console.log("Preset data:", preset);
+
+        if (!preset) {
+            console.error("No preset data found on button:", this);
+            return;
+        }
+
+        sendDJCommand("preset", { preset_name: preset });
+    });
+
+    // Welcome Test Sequence
+    $("#welcome_test_btn").on("click", function () {
+        console.log("Welcome test sequence triggered");
+        // Add visual feedback
+        $(this).prop("disabled", true).text("Running...");
+
+        sendDJCommand("sequence", { sequence_name: "welcome_test" });
+
+        // Re-enable button after a delay
+        setTimeout(() => {
+            $(this).prop("disabled", false).text("▶️ Run Welcome Test");
+        }, 3000);
+    });
+
+    // Sequence Designer Variables
+    let currentSequence = [];
+    let draggedItem = null;
+    let showMarkupMode = false;
+    let draggedTimelineItem = null;
+    let draggedTimelineIndex = null;
+
+    // Drag and Drop Functionality
+    $(document).on("dragstart", ".draggable-item", function (e) {
+        draggedItem = $(this);
+        console.log("Drag started:", draggedItem.data());
+        $(this).addClass("dragging");
+        e.originalEvent.dataTransfer.effectAllowed = "copy";
+        // Add data to transfer for debugging
+        e.originalEvent.dataTransfer.setData(
+            "text/plain",
+            JSON.stringify(draggedItem.data()),
+        );
+    });
+
+    $(document).on("dragover", ".sequence-timeline", function (e) {
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = "copy";
+        $(this).addClass("drag-over");
+    });
+
+    $(document).on("dragleave", ".sequence-timeline", function (e) {
+        $(this).removeClass("drag-over");
+    });
+
+    $(document).on("dragend", ".draggable-item", function (e) {
+        $(this).removeClass("dragging");
         draggedItem = null;
-        return; // User cancelled or entered empty text
-      }
-      itemData.value = text;
-      itemData.display = `💬 "${text.length > 20 ? text.substring(0, 20) + '...' : text}"`;
-      console.log('Speech item created:', itemData);
-    }
-    
-    // Handle sound effects
-    if (itemData.type === 'sound') {
-      console.log('Processing sound effect');
-      if (!itemData.value) {
-        itemData.value = 'sfxmm_incoming02'; // Default sound
-      }
-      itemData.display = `🔊 ${itemData.value}`;
-    }
-    
-    // Handle emotion mixer mood settings
-    if (itemData.type === 'emotion_mood') {
-      console.log('Processing emotion mood setting');
-      // Convert to set_emotion command format
-      itemData.type = 'set_emotion';
-      itemData.value = {
-        mood: itemData.value,
-        intensity: 0.5 // Default intensity
-      };
-      itemData.display = `😎 Mood: ${itemData.value.mood.charAt(0).toUpperCase() + itemData.value.mood.slice(1)}`;
-    }
-    
-    // Handle emotion mixer intensity settings
-    if (itemData.type === 'emotion_intensity') {
-      console.log('Processing emotion intensity setting');
-      let intensityValue = 0.5; // default medium
-      if (itemData.value === 'low') intensityValue = 0.2;
-      else if (itemData.value === 'medium') intensityValue = 0.5;
-      else if (itemData.value === 'high') intensityValue = 0.8;
-      
-      // Convert to set_emotion command format
-      itemData.type = 'set_emotion';
-      itemData.value = {
-        mood: 'neutral', // Default mood
-        intensity: intensityValue
-      };
-      itemData.display = `⚡ Intensity: ${Math.round(intensityValue * 100)}%`;
-    }
-    
-    console.log('Adding item to sequence:', itemData);
-    addToSequence(itemData);
-    draggedItem = null;
-  } else {
-    console.log('No dragged item found');
-  }
-});
+    });
 
-// Add item to sequence
-function addToSequence(itemData) {
-  console.log('DEBUG: addToSequence called with:', itemData);
-  currentSequence.push(itemData);
-  console.log('DEBUG: currentSequence now has', currentSequence.length, 'items:', currentSequence);
-  updateSequenceDisplay();
-  updateSequenceControls();
-}
+    $(document).on("drop", ".sequence-timeline", function (e) {
+        e.preventDefault();
+        $(this).removeClass("drag-over");
+        $(".draggable-item").removeClass("dragging");
 
-// Markup Generation Functions
-function generateMarkupForItem(item, currentMood = 'neutral', currentIntensity = 0.5) {
-  switch (item.type) {
-    case 'behavior':
-      return generateBehaviorMarkup(item.value);
-    
-    case 'speech':
-      const mood = item.mood || currentMood;
-      const intensity = item.intensity !== undefined ? item.intensity : currentIntensity;
-      return `Speech with mood: ${mood}, intensity: ${Math.round(intensity * 100)}% - "${item.value}"`;
-    
-    case 'sound':
-      const volume = item.volume || 0.75;
-      return generateSoundMarkup(item.value, volume);
-    
-    case 'pause':
-      const duration = parseFloat(item.value) || 1.0;
-      return `<break time="${duration}s"/>`;
-    
-    case 'set_emotion':
-      const emotionData = item.value || {};
-      return `Emotion State: mood=${emotionData.mood || 'neutral'}, intensity=${Math.round((emotionData.intensity || 0.5) * 100)}%`;
-    
-    default:
-      return 'Unknown item type';
-  }
-}
+        console.log("Drop event triggered on timeline container");
+        console.log("draggedItem (from library):", !!draggedItem);
+        console.log("draggedTimelineItem (reordering):", !!draggedTimelineItem);
 
-function generateBehaviorMarkup(behaviorName) {
-  // Predefined behavior commands from behavior_config.py
-  const behaviorCommands = {
-    'Bht_Vg_Laugh_Belly': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Belly+,   +Track+:++ }"/>',
-    'Bht_Vg_Clear_Throat': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>',
-    'Bht_Wait_Hug': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
-    'Bht_Spin_360': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Spin_360+,   +Track+:++ }"/>',
-    'Bht_Photo_pose_Curious': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Photo_pose_Curious+,   +Track+:++ }"/>',
-    'Bht_Vg_Hmm_Confused_Sustained': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Hmm_Confused_Sustained+,   +Track+:++ }"/>',
-    'Bht_Startled': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Startled+,   +Track+:++ }"/>',
-    'Bht_Turn_Away': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Away+,   +Track+:++ }"/>',
-    'Bht_Circle_motion': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Circle_motion+,   +Track+:++ }"/>',
-    'Bht_Vg_Snore_Heavy': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Heavy+,   +Track+:++ }"/>',
-    'Bht_Back_and_forth_arm_wave': '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:3.0,   +repeat+:2,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Back_and_forth_arm_wave+,   +Track+:++ }"/>'
-  };
-  
-  if (behaviorCommands[behaviorName]) {
-    return behaviorCommands[behaviorName];
-  }
-  
-  // Generate default behavior markup template
-  return `<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+${behaviorName}+,   +Track+:++ }"/>`;
-}
+        // Only handle library items being dropped, not timeline reordering
+        if (draggedItem && !draggedTimelineItem) {
+            console.log("Processing dropped item:", draggedItem.data());
+            const itemData = {
+                type: draggedItem.data("type"),
+                value: draggedItem.data("value"),
+                display: draggedItem.text().trim(),
+            };
 
-function generateSoundMarkup(soundName, volume) {
-  return `<mark name="cmd:playaudio,data:{+SoundToPlay+:+${soundName}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:${volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}"/>`;
-}
+            // Handle special cases for speech
+            if (itemData.type === "speech") {
+                console.log("Prompting for speech text");
+                const text = prompt("Enter speech text:", "Hello there!");
+                if (text === null || text.trim() === "") {
+                    console.log("Speech input cancelled or empty");
+                    draggedItem = null;
+                    return; // User cancelled or entered empty text
+                }
+                itemData.value = text;
+                itemData.display = `💬 "${text.length > 20 ? text.substring(0, 20) + "..." : text}"`;
+                console.log("Speech item created:", itemData);
+            }
 
-// Update sequence timeline display
-function updateSequenceDisplay() {
-  const timeline = $('#sequence-timeline');
-  timeline.empty();
-  
-  if (currentSequence.length === 0) {
-    timeline.append('<div class="timeline-placeholder">Drag items here to build your sequence</div>');
-    return;
-  }
-  
-  // Track current emotional state for markup generation
-  let currentMood = 'neutral';
-  let currentIntensity = 0.5;
-  
-  currentSequence.forEach((item, index) => {
-    // Update emotional state tracking
-    if (item.type === 'set_emotion' && item.value) {
-      if (item.value.mood) currentMood = item.value.mood;
-      if (item.value.intensity !== undefined) currentIntensity = item.value.intensity;
+            // Handle sound effects
+            if (itemData.type === "sound") {
+                console.log("Processing sound effect");
+                if (!itemData.value) {
+                    itemData.value = "sfxmm_incoming02"; // Default sound
+                }
+                itemData.display = `🔊 ${itemData.value}`;
+            }
+
+            // Handle emotion mixer mood settings
+            if (itemData.type === "emotion_mood") {
+                console.log("Processing emotion mood setting");
+                // Convert to set_emotion command format
+                itemData.type = "set_emotion";
+                itemData.value = {
+                    mood: itemData.value,
+                    intensity: 0.5, // Default intensity
+                };
+                itemData.display = `😎 Mood: ${itemData.value.mood.charAt(0).toUpperCase() + itemData.value.mood.slice(1)}`;
+            }
+
+            // Handle emotion mixer intensity settings
+            if (itemData.type === "emotion_intensity") {
+                console.log("Processing emotion intensity setting");
+                let intensityValue = 0.5; // default medium
+                if (itemData.value === "low") intensityValue = 0.3;
+                else if (itemData.value === "medium") intensityValue = 0.6;
+                else if (itemData.value === "high") intensityValue = 1.0;
+
+                // Convert to set_emotion command format
+                itemData.type = "set_emotion";
+                itemData.value = {
+                    mood: null, // Will use current sequence mood
+                    intensity: intensityValue,
+                };
+                itemData.display = `⚡ Intensity: ${Math.round(intensityValue * 100)}%`;
+            }
+
+            console.log("Adding item to sequence:", itemData);
+            addToSequence(itemData);
+            draggedItem = null;
+        } else {
+            console.log("No dragged item found");
+        }
+    });
+
+    // Add item to sequence
+    function addToSequence(itemData) {
+        console.log("DEBUG: addToSequence called with:", itemData);
+        currentSequence.push(itemData);
+        console.log(
+            "DEBUG: currentSequence now has",
+            currentSequence.length,
+            "items:",
+            currentSequence,
+        );
+        updateSequenceDisplay();
+        updateSequenceControls();
     }
-    
-    // Generate markup for this item
-    const markup = generateMarkupForItem(item, currentMood, currentIntensity);
-    
-    const timelineItem = $(`
+
+    // Markup Generation Functions
+    function generateMarkupForItem(
+        item,
+        currentMood = "neutral",
+        currentIntensity = 0.5,
+    ) {
+        switch (item.type) {
+            case "behavior":
+                return generateBehaviorMarkup(item.value);
+
+            case "speech":
+                const mood = item.mood || currentMood;
+                const intensity =
+                    item.intensity !== undefined
+                        ? item.intensity
+                        : currentIntensity;
+                return `Speech with mood: ${mood}, intensity: ${Math.round(intensity * 100)}% - "${item.value}"`;
+
+            case "sound":
+                const volume = item.volume || 0.75;
+                return generateSoundMarkup(item.value, volume);
+
+            case "pause":
+                const duration = parseFloat(item.value) || 1.0;
+                return `<break time="${duration}s"/>`;
+
+            case "set_emotion":
+                const emotionData = item.value || {};
+                return `Emotion State: mood=${emotionData.mood || "neutral"}, intensity=${Math.round((emotionData.intensity || 0.5) * 100)}%`;
+
+            default:
+                return "Unknown item type";
+        }
+    }
+
+    function generateBehaviorMarkup(behaviorName) {
+        // Predefined behavior commands from behavior_config.py
+        const behaviorCommands = {
+            Bht_Vg_Laugh_Big_Fourcount:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Laugh_Big_Fourcount+,   +Track+:++ }"/>',
+            Bht_Vg_Clear_Throat:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Clear_Throat+,   +Track+:++ }"/>',
+            Bht_Wait_Hug:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Wait_Hug+,   +Track+:++ }"/>',
+            Bht_Spin_360:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Spin_360+,   +Track+:++ }"/>',
+            Bht_Photo_pose_Curious:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Photo_pose_Curious+,   +Track+:++ }"/>',
+            Bht_Vg_Hmm_Confused_Sustained:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Hmm_Confused_Sustained+,   +Track+:++ }"/>',
+            Bht_Startled:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Startled+,   +Track+:++ }"/>',
+            Bht_Turn_Away:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Turn_Away+,   +Track+:++ }"/>',
+            Bht_Circle_motion:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Circle_motion+,   +Track+:++ }"/>',
+            Bht_Vg_Snore_Heavy:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Vg_Snore_Heavy+,   +Track+:++ }"/>',
+            Bht_Back_and_forth_arm_wave:
+                '<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:3.0,   +repeat+:2,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+Bht_Back_and_forth_arm_wave+,   +Track+:++ }"/>',
+        };
+
+        if (behaviorCommands[behaviorName]) {
+            return behaviorCommands[behaviorName];
+        }
+
+        // Generate default behavior markup template
+        return `<mark name="cmd:behaviour-tree,data:{   +transition+:0.3,   +duration+:2.0,   +repeat+:1,   +layerBlendInTime+:0.4,   +layerBlendOutTime+:0.4,   +blocking+:false,   +action+:0,   +eventName+:+Gesture_None+,   +category+:+None+,   +behaviour+:+${behaviorName}+,   +Track+:++ }"/>`;
+    }
+
+    function generateSoundMarkup(soundName, volume) {
+        return `<mark name="cmd:playaudio,data:{+SoundToPlay+:+${soundName}+,+LoopSound+:false,+playInBackground+:false,+channel+:1,+ReplaceCurrentSound+:false,+PlayImmediate+:true,+ForceQueue+:false,+Volume+:${volume},+FadeInTime+:0.0,+FadeOutTime+:2.0,+AudioTimelineField+:+none+}"/>`;
+    }
+
+    // Update sequence timeline display
+    function updateSequenceDisplay() {
+        const timeline = $("#sequence-timeline");
+        timeline.empty();
+
+        if (currentSequence.length === 0) {
+            timeline.append(
+                '<div class="timeline-placeholder">Drag items here to build your sequence</div>',
+            );
+            return;
+        }
+
+        // Track current emotional state for markup generation
+        let currentMood = "neutral";
+        let currentIntensity = 0.5;
+
+        currentSequence.forEach((item, index) => {
+            // Update emotional state tracking
+            if (item.type === "set_emotion" && item.value) {
+                if (item.value.mood) currentMood = item.value.mood;
+                if (item.value.intensity !== undefined)
+                    currentIntensity = item.value.intensity;
+            }
+
+            // Generate markup for this item
+            const markup = generateMarkupForItem(
+                item,
+                currentMood,
+                currentIntensity,
+            );
+
+            const timelineItem = $(`
       <div class="timeline-item" data-index="${index}" data-type="${item.type}" draggable="true">
         <div class="item-number">${index + 1}</div>
         <div class="item-content">${item.display}</div>
-        <button class="markup-toggle ${showMarkupMode ? 'active' : ''}" data-index="${index}" title="Show/Hide Markup">⚡</button>
+        <button class="markup-toggle ${showMarkupMode ? "active" : ""}" data-index="${index}" title="Show/Hide Markup">⚡</button>
         <button class="remove-btn" data-index="${index}">×</button>
-        <div class="markup-display ${showMarkupMode ? 'show' : ''}" data-index="${index}">${markup}</div>
+        <div class="markup-display ${showMarkupMode ? "show" : ""}" data-index="${index}">${markup}</div>
       </div>
     `);
-    timeline.append(timelineItem);
-  });
-}
-
-// Remove item from sequence
-$(document).on('click', '.remove-btn', function(e) {
-  e.stopPropagation();
-  const index = parseInt($(this).data('index'));
-  currentSequence.splice(index, 1);
-  updateSequenceDisplay();
-  updateSequenceControls();
-});
-
-// Toggle individual item markup display
-$(document).on('click', '.markup-toggle', function(e) {
-  e.stopPropagation();
-  const index = $(this).data('index');
-  const markupDisplay = $(this).siblings('.markup-display');
-  const isShowing = markupDisplay.hasClass('show');
-  
-  if (isShowing) {
-    markupDisplay.removeClass('show');
-    $(this).removeClass('active');
-  } else {
-    markupDisplay.addClass('show');
-    $(this).addClass('active');
-  }
-});
-
-// Global markup toggle button
-$('#toggle-markup').on('click', function() {
-  showMarkupMode = !showMarkupMode;
-  
-  if (showMarkupMode) {
-    $(this).text('🔍 Hide Markup').removeClass('btn-outline-warning').addClass('btn-warning');
-    $('.markup-display').addClass('show');
-    $('.markup-toggle').addClass('active');
-  } else {
-    $(this).text('🔍 Show Markup').removeClass('btn-warning').addClass('btn-outline-warning');
-    $('.markup-display').removeClass('show');
-    $('.markup-toggle').removeClass('active');
-  }
-});
-
-// Timeline item reordering functionality
-$(document).on('dragstart', '.timeline-item', function(e) {
-  // Prevent event from bubbling to avoid conflicts
-  e.stopPropagation();
-  
-  draggedTimelineItem = $(this);
-  draggedTimelineIndex = parseInt($(this).data('index'));
-  $(this).addClass('dragging');
-  e.originalEvent.dataTransfer.effectAllowed = 'move';
-  e.originalEvent.dataTransfer.setData('text/plain', 'timeline-reorder');
-  
-  console.log('Timeline item drag started:', draggedTimelineIndex, 'item:', $(this)[0]);
-  
-  // Add visual feedback
-  $(this).css('opacity', '0.6');
-});
-
-$(document).on('dragover', '.timeline-item', function(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  
-  if (draggedTimelineItem && $(this)[0] !== draggedTimelineItem[0]) {
-    e.originalEvent.dataTransfer.dropEffect = 'move';
-    $(this).addClass('drag-over-timeline');
-    console.log('Dragging over timeline item:', $(this).data('index'));
-  }
-});
-
-$(document).on('dragleave', '.timeline-item', function(e) {
-  $(this).removeClass('drag-over-timeline');
-});
-
-$(document).on('drop', '.timeline-item', function(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  
-  console.log('Drop on timeline item detected');
-  console.log('draggedTimelineItem:', !!draggedTimelineItem);
-  console.log('draggedItem (from library):', !!draggedItem);
-  
-  // Only handle timeline reordering if we're dragging a timeline item
-  if (draggedTimelineItem && !draggedItem && $(this)[0] !== draggedTimelineItem[0]) {
-    const dropIndex = parseInt($(this).data('index'));
-    console.log('Reordering timeline items:', draggedTimelineIndex, '->', dropIndex);
-    
-    // Reorder the sequence array
-    const draggedSequenceItem = currentSequence[draggedTimelineIndex];
-    currentSequence.splice(draggedTimelineIndex, 1);
-    currentSequence.splice(dropIndex, 0, draggedSequenceItem);
-    
-    updateSequenceDisplay();
-  }
-  
-  $('.timeline-item').removeClass('drag-over-timeline').css('opacity', '');
-});
-
-$(document).on('dragend', '.timeline-item', function(e) {
-  console.log('Timeline item drag ended');
-  $('.timeline-item').removeClass('dragging drag-over-timeline').css('opacity', '');
-  draggedTimelineItem = null;
-  draggedTimelineIndex = null;
-});
-
-// Update sequence control buttons
-function updateSequenceControls() {
-  const hasItems = currentSequence.length > 0;
-  $('#play-sequence').prop('disabled', !hasItems);
-  $('#save-sequence').prop('disabled', !hasItems);
-}
-
-// Play sequence
-$('#play-sequence').on('click', function() {
-  if (currentSequence.length === 0) {
-    alert('No sequence to play!');
-    return;
-  }
-  
-  console.log('Playing sequence:', currentSequence);
-  playSequence(currentSequence);
-});
-
-// Play sequence function
-function playSequence(sequence) {
-  console.log('Playing sequence with emotion integration:', sequence);
-  
-  if (!sequence || sequence.length === 0) {
-    alert('No sequence to play!');
-    return;
-  }
-  
-  // Visual feedback - disable play button during playback
-  const playBtn = $('#play-sequence');
-  const originalText = playBtn.text();
-  playBtn.prop('disabled', true).text('🎬 Playing...');
-  
-  // Simple emotion integration - track emotions and apply to speech
-  let currentMood = 'neutral';
-  let currentIntensity = 0.5;
-  const processedSequence = [];
-  
-  for (let i = 0; i < sequence.length; i++) {
-    const item = sequence[i];
-    
-    if (item.type === 'set_emotion') {
-      // Update current emotion state
-      if (item.value && item.value.mood) {
-        currentMood = item.value.mood;
-      }
-      if (item.value && item.value.intensity !== undefined) {
-        currentIntensity = item.value.intensity;
-      }
-      processedSequence.push(item);
-    } else if (item.type === 'speech') {
-      // Add emotion context to speech
-      const emotionalSpeech = {
-        ...item,
-        mood: currentMood,
-        intensity: currentIntensity
-      };
-      console.log('Adding emotional speech:', emotionalSpeech);
-      processedSequence.push(emotionalSpeech);
-    } else {
-      processedSequence.push(item);
+            timeline.append(timelineItem);
+        });
     }
-  }
-  
-  console.log('Final processed sequence:', processedSequence);
-  
-  // Use the backend custom sequence handler with improved error handling
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: {
-      command: 'play_custom_sequence',
-      sequence_data: JSON.stringify(processedSequence)
-    },
-    dataType: 'json',
-    timeout: 10000, // 10 second timeout
-    success: function(response) {
-      console.log('Sequence play response:', response);
-      if (response.result === 'success') {
-        console.log('✓ Sequence started successfully');
-        // Show temporary success message
-        playBtn.text('✓ Playing!');
-        setTimeout(() => {
-          playBtn.text(originalText).prop('disabled', false);
-        }, 3000); // Re-enable after 3 seconds
-      } else {
-        console.error('Sequence play failed:', response.message);
-        alert('Failed to play sequence: ' + (response.message || 'Unknown error'));
-        playBtn.text(originalText).prop('disabled', false);
-      }
-    },
-    error: function(xhr, status, error) {
-      console.error('AJAX error playing sequence:', status, error);
-      console.error('Response:', xhr.responseText);
-      alert('Failed to send sequence to robot: ' + error);
-      playBtn.text(originalText).prop('disabled', false);
+
+    // Remove item from sequence
+    $(document).on("click", ".remove-btn", function (e) {
+        e.stopPropagation();
+        const index = parseInt($(this).data("index"));
+        currentSequence.splice(index, 1);
+        updateSequenceDisplay();
+        updateSequenceControls();
+    });
+
+    // Toggle individual item markup display
+    $(document).on("click", ".markup-toggle", function (e) {
+        e.stopPropagation();
+        const index = $(this).data("index");
+        const markupDisplay = $(this).siblings(".markup-display");
+        const isShowing = markupDisplay.hasClass("show");
+
+        if (isShowing) {
+            markupDisplay.removeClass("show");
+            $(this).removeClass("active");
+        } else {
+            markupDisplay.addClass("show");
+            $(this).addClass("active");
+        }
+    });
+
+    // Global markup toggle button
+    $("#toggle-markup").on("click", function () {
+        showMarkupMode = !showMarkupMode;
+
+        if (showMarkupMode) {
+            $(this)
+                .text("🔍 Hide Markup")
+                .removeClass("btn-outline-warning")
+                .addClass("btn-warning");
+            $(".markup-display").addClass("show");
+            $(".markup-toggle").addClass("active");
+        } else {
+            $(this)
+                .text("🔍 Show Markup")
+                .removeClass("btn-warning")
+                .addClass("btn-outline-warning");
+            $(".markup-display").removeClass("show");
+            $(".markup-toggle").removeClass("active");
+        }
+    });
+
+    // Timeline item reordering functionality
+    $(document).on("dragstart", ".timeline-item", function (e) {
+        // Prevent event from bubbling to avoid conflicts
+        e.stopPropagation();
+
+        draggedTimelineItem = $(this);
+        draggedTimelineIndex = parseInt($(this).data("index"));
+        $(this).addClass("dragging");
+        e.originalEvent.dataTransfer.effectAllowed = "move";
+        e.originalEvent.dataTransfer.setData("text/plain", "timeline-reorder");
+
+        console.log(
+            "Timeline item drag started:",
+            draggedTimelineIndex,
+            "item:",
+            $(this)[0],
+        );
+
+        // Add visual feedback
+        $(this).css("opacity", "0.6");
+    });
+
+    $(document).on("dragover", ".timeline-item", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (draggedTimelineItem && $(this)[0] !== draggedTimelineItem[0]) {
+            e.originalEvent.dataTransfer.dropEffect = "move";
+            $(this).addClass("drag-over-timeline");
+            console.log("Dragging over timeline item:", $(this).data("index"));
+        }
+    });
+
+    $(document).on("dragleave", ".timeline-item", function (e) {
+        $(this).removeClass("drag-over-timeline");
+    });
+
+    $(document).on("drop", ".timeline-item", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        console.log("Drop on timeline item detected");
+        console.log("draggedTimelineItem:", !!draggedTimelineItem);
+        console.log("draggedItem (from library):", !!draggedItem);
+
+        // Only handle timeline reordering if we're dragging a timeline item
+        if (
+            draggedTimelineItem &&
+            !draggedItem &&
+            $(this)[0] !== draggedTimelineItem[0]
+        ) {
+            const dropIndex = parseInt($(this).data("index"));
+            console.log(
+                "Reordering timeline items:",
+                draggedTimelineIndex,
+                "->",
+                dropIndex,
+            );
+
+            // Reorder the sequence array
+            const draggedSequenceItem = currentSequence[draggedTimelineIndex];
+            currentSequence.splice(draggedTimelineIndex, 1);
+            currentSequence.splice(dropIndex, 0, draggedSequenceItem);
+
+            updateSequenceDisplay();
+        }
+
+        $(".timeline-item")
+            .removeClass("drag-over-timeline")
+            .css("opacity", "");
+    });
+
+    $(document).on("dragend", ".timeline-item", function (e) {
+        console.log("Timeline item drag ended");
+        $(".timeline-item")
+            .removeClass("dragging drag-over-timeline")
+            .css("opacity", "");
+        draggedTimelineItem = null;
+        draggedTimelineIndex = null;
+    });
+
+    // Update sequence control buttons
+    function updateSequenceControls() {
+        const hasItems = currentSequence.length > 0;
+        $("#play-sequence").prop("disabled", !hasItems);
+        $("#save-sequence").prop("disabled", !hasItems);
     }
-  });
-}
 
-// Note: Emotion integration is now handled directly in playSequence function
+    // Play sequence
+    $("#play-sequence").on("click", function () {
+        if (currentSequence.length === 0) {
+            alert("No sequence to play!");
+            return;
+        }
 
-// Clear sequence
-$('#clear-sequence').on('click', function() {
-  if (currentSequence.length > 0 && !confirm('Clear current sequence?')) {
-    return;
-  }
-  currentSequence = [];
-  updateSequenceDisplay();
-  updateSequenceControls();
-});
+        console.log("Playing sequence:", currentSequence);
+        playSequence(currentSequence);
+    });
 
-// Save sequence
-$('#save-sequence').on('click', function() {
-  const name = $('#sequence-name').val().trim();
-  if (!name) {
-    alert('Please enter a sequence name!');
-    return;
-  }
-  
-  if (currentSequence.length === 0) {
-    alert('No sequence to save!');
-    return;
-  }
-  
-  // Check if sequence already exists and ask for confirmation
-  const confirmMessage = 'Save sequence "' + name + '"? This will overwrite any existing sequence with the same name.';
-  if (!confirm(confirmMessage)) {
-    return;
-  }
-  
-  // Save to backend
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: {
-      command: 'save_sequence',
-      sequence_name: name,
-      sequence_data: JSON.stringify(currentSequence)
-    },
-    dataType: 'json',
-    success: function(response) {
-      if (response.success) {
-        alert('✓ Sequence "' + name + '" saved successfully!');
-        // Keep the name in the input for easy re-saving after edits
-        console.log('Sequence saved:', name, 'with', currentSequence.length, 'items');
-        // Refresh the saved sequences list
-        loadSavedSequences();
-      } else {
-        alert('Save failed: ' + response.message);
-      }
-    },
-    error: function() {
-      alert('Failed to save sequence!');
+    // Play sequence function
+    function playSequence(sequence) {
+        console.log("Playing sequence with emotion integration:", sequence);
+
+        if (!sequence || sequence.length === 0) {
+            alert("No sequence to play!");
+            return;
+        }
+
+        // Visual feedback - disable play button during playback
+        const playBtn = $("#play-sequence");
+        const originalText = playBtn.text();
+        playBtn.prop("disabled", true).text("🎬 Playing...");
+
+        // Simple emotion integration - track emotions and apply to speech
+        let currentMood = "neutral";
+        let currentIntensity = 0.5;
+        const processedSequence = [];
+
+        for (let i = 0; i < sequence.length; i++) {
+            const item = sequence[i];
+
+            if (item.type === "set_emotion") {
+                // Update current emotion state
+                if (item.value && item.value.mood) {
+                    currentMood = item.value.mood;
+                }
+                if (item.value && item.value.intensity !== undefined) {
+                    currentIntensity = item.value.intensity;
+                }
+                processedSequence.push(item);
+            } else if (item.type === "speech") {
+                // Add emotion context to speech
+                const emotionalSpeech = {
+                    ...item,
+                    mood: currentMood,
+                    intensity: currentIntensity,
+                };
+                console.log("Adding emotional speech:", emotionalSpeech);
+                processedSequence.push(emotionalSpeech);
+            } else {
+                processedSequence.push(item);
+            }
+        }
+
+        console.log("Final processed sequence:", processedSequence);
+
+        // Use the backend custom sequence handler with improved error handling
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: {
+                command: "play_custom_sequence",
+                sequence_data: JSON.stringify(processedSequence),
+            },
+            dataType: "json",
+            timeout: 10000, // 10 second timeout
+            success: function (response) {
+                console.log("Sequence play response:", response);
+                if (response.result === "success") {
+                    console.log("✓ Sequence started successfully");
+                    // Show temporary success message
+                    playBtn.text("✓ Playing!");
+                    setTimeout(() => {
+                        playBtn.text(originalText).prop("disabled", false);
+                    }, 3000); // Re-enable after 3 seconds
+                } else {
+                    console.error("Sequence play failed:", response.message);
+                    alert(
+                        "Failed to play sequence: " +
+                            (response.message || "Unknown error"),
+                    );
+                    playBtn.text(originalText).prop("disabled", false);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX error playing sequence:", status, error);
+                console.error("Response:", xhr.responseText);
+                alert("Failed to send sequence to robot: " + error);
+                playBtn.text(originalText).prop("disabled", false);
+            },
+        });
     }
-  });
-});
 
-// Load and display saved sequences
-function loadSavedSequences() {
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: { command: 'list_sequences' },
-    dataType: 'json',
-    success: function(response) {
-      const container = $('#saved-sequences-list');
-      
-      if (!response.success || response.sequences.length === 0) {
-        container.html('<div class="loading-message">No saved sequences yet. Create and save a sequence to see it here!</div>');
-        return;
-      }
-      
-      // Clear and populate with sequence buttons
-      container.empty();
-      response.sequences.forEach(function(seq) {
-        const button = $(`
+    // Note: Emotion integration is now handled directly in playSequence function
+
+    // Clear sequence
+    $("#clear-sequence").on("click", function () {
+        if (currentSequence.length > 0 && !confirm("Clear current sequence?")) {
+            return;
+        }
+        currentSequence = [];
+        updateSequenceDisplay();
+        updateSequenceControls();
+    });
+
+    // Save sequence
+    $("#save-sequence").on("click", function () {
+        const name = $("#sequence-name").val().trim();
+        if (!name) {
+            alert("Please enter a sequence name!");
+            return;
+        }
+
+        if (currentSequence.length === 0) {
+            alert("No sequence to save!");
+            return;
+        }
+
+        // Check if sequence already exists and ask for confirmation
+        const confirmMessage =
+            'Save sequence "' +
+            name +
+            '"? This will overwrite any existing sequence with the same name.';
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Save to backend
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: {
+                command: "save_sequence",
+                sequence_name: name,
+                sequence_data: JSON.stringify(currentSequence),
+            },
+            dataType: "json",
+            success: function (response) {
+                if (response.success) {
+                    alert('✓ Sequence "' + name + '" saved successfully!');
+                    // Keep the name in the input for easy re-saving after edits
+                    console.log(
+                        "Sequence saved:",
+                        name,
+                        "with",
+                        currentSequence.length,
+                        "items",
+                    );
+                    // Refresh the saved sequences list
+                    loadSavedSequences();
+                } else {
+                    alert("Save failed: " + response.message);
+                }
+            },
+            error: function () {
+                alert("Failed to save sequence!");
+            },
+        });
+    });
+
+    // Load and display saved sequences
+    function loadSavedSequences() {
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: { command: "list_sequences" },
+            dataType: "json",
+            success: function (response) {
+                const container = $("#saved-sequences-list");
+
+                if (!response.success || response.sequences.length === 0) {
+                    container
+                        .empty()
+                        .append(
+                            $("<div>")
+                                .addClass("loading-message")
+                                .text(
+                                    "No saved sequences yet. Create and save a sequence to see it here!",
+                                ),
+                        );
+                    return;
+                }
+
+                // Clear and populate with sequence buttons
+                container.empty();
+                response.sequences.forEach(function (seq) {
+                    const button = $(`
           <button class="saved-sequence-btn" data-sequence-name="${seq.name}">
             📋 ${seq.name}
             <span class="delete-sequence" data-sequence-name="${seq.name}" title="Delete sequence">×</span>
           </button>
         `);
-        container.append(button);
-      });
-    },
-    error: function() {
-      $('#saved-sequences-list').html('<div class="loading-message">Failed to load saved sequences</div>');
+                    container.append(button);
+                });
+            },
+            error: function () {
+                $("#saved-sequences-list").html(
+                    $("<div>")
+                        .addClass("loading-message")
+                        .text("Failed to load saved sequences"),
+                );
+            },
+        });
     }
-  });
-}
 
-// Load a saved sequence for editing
-$(document).on('click', '.saved-sequence-btn', function(e) {
-  // Don't trigger if clicking the delete button
-  if ($(e.target).hasClass('delete-sequence')) {
-    return;
-  }
-  
-  const sequenceName = $(this).data('sequence-name');
-  
-  if (currentSequence.length > 0 && !confirm('Replace current sequence with "' + sequenceName + '"?')) {
-    return;
-  }
-  
-  // Load the selected sequence
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: {
-      command: 'load_sequence',
-      sequence_name: sequenceName
-    },
-    dataType: 'json',
-    success: function(loadResponse) {
-      if (loadResponse.success) {
-        currentSequence = loadResponse.sequence.slice();
-        updateSequenceDisplay();
-        updateSequenceControls();
-        $('#sequence-name').val(sequenceName);
-        console.log('Loaded sequence:', sequenceName, 'with', currentSequence.length, 'items');
-      } else {
-        alert('Load failed: ' + loadResponse.message);
-      }
-    },
-    error: function() {
-      alert('Failed to load sequence!');
-    }
-  });
-});
-
-// Delete a saved sequence
-$(document).on('click', '.delete-sequence', function(e) {
-  e.stopPropagation();
-  
-  const sequenceName = $(this).data('sequence-name');
-  
-  if (!confirm('Delete sequence "' + sequenceName + '"? This cannot be undone.')) {
-    return;
-  }
-  
-  $.ajax({
-    type: 'POST',
-    url: "{% url 'hive:dj_command' object.pk %}",
-    data: {
-      command: 'delete_sequence',
-      sequence_name: sequenceName
-    },
-    dataType: 'json',
-    success: function(response) {
-      if (response.success) {
-        alert('✓ Sequence "' + sequenceName + '" deleted successfully!');
-        loadSavedSequences(); // Refresh the list
-        
-        // Clear the name input if it matches the deleted sequence
-        if ($('#sequence-name').val() === sequenceName) {
-          $('#sequence-name').val('');
+    // Load a saved sequence for editing
+    $(document).on("click", ".saved-sequence-btn", function (e) {
+        // Don't trigger if clicking the delete button
+        if ($(e.target).hasClass("delete-sequence")) {
+            return;
         }
-      } else {
-        alert('Delete failed: ' + response.message);
-      }
-    },
-    error: function() {
-      alert('Failed to delete sequence!');
-    }
-  });
-});
 
-// Macro recording
-$('#record_macro').on('click', function() {
-  isRecordingMacro = true;
-  currentMacro = [];
-  $(this).prop('disabled', true);
-  $('#stop_macro').prop('disabled', false);
-  alert('Macro recording started! Perform actions to record them.');
-});
+        const sequenceName = $(this).data("sequence-name");
 
-$('#stop_macro').on('click', function() {
-  isRecordingMacro = false;
-  $(this).prop('disabled', true);
-  $('#record_macro').prop('disabled', false);
-  $('#play_macro').prop('disabled', false);
-  alert(`Macro recorded with ${currentMacro.length} actions!`);
-});
+        if (
+            currentSequence.length > 0 &&
+            !confirm('Replace current sequence with "' + sequenceName + '"?')
+        ) {
+            return;
+        }
 
-$('#play_macro').on('click', function() {
-  if (currentMacro.length === 0) {
-    alert('No macro recorded!');
-    return;
-  }
-  
-  sendDJCommand('play_macro', { macro_actions: currentMacro });
-});
+        // Load the selected sequence
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: {
+                command: "load_sequence",
+                sequence_name: sequenceName,
+            },
+            dataType: "json",
+            success: function (loadResponse) {
+                if (loadResponse.success) {
+                    currentSequence = loadResponse.sequence.slice();
+                    updateSequenceDisplay();
+                    updateSequenceControls();
+                    $("#sequence-name").val(sequenceName);
+                    console.log(
+                        "Loaded sequence:",
+                        sequenceName,
+                        "with",
+                        currentSequence.length,
+                        "items",
+                    );
+                } else {
+                    alert("Load failed: " + loadResponse.message);
+                }
+            },
+            error: function () {
+                alert("Failed to load sequence!");
+            },
+        });
+    });
 
-// Initialize
-$(document).ready(function() {
-  console.log('DJ Panel initializing...');
-  console.log('Found action buttons:', $('.action-btn').length);
-  console.log('Found behavior buttons:', $('.behavior-btn').length);
-  console.log('Found sound effect buttons:', $('.sfx-btn').length);
-  console.log('Found preset buttons:', $('.preset-btn').length);
-  
-  // Test if jQuery is working
-  console.log('jQuery version:', $.fn.jquery);
-  
-  // Debug: List all buttons with their data attributes
-  $('.action-btn').each(function(i, btn) {
-    console.log('Action button', i, ':', $(btn).data('action'), $(btn).text());
-  });
-  
-  $('.behavior-btn').each(function(i, btn) {
-    console.log('Behavior button', i, ':', $(btn).data('behavior'), $(btn).text());
-  });
-  
-  // Test click detection on any button
-  $(document).on('click', 'button', function(e) {
-    console.log('Generic button click detected:', $(this).attr('class'), $(this).text());
-  });
-  
-  // Auto-enable DJ mode when panel loads
-  console.log('Auto-enabling DJ mode...');
-  setDJMode(true);
-  
-  // Load saved sequences
-  loadSavedSequences();
-  
-  refreshDJStatus();
-});
+    // Delete a saved sequence
+    $(document).on("click", ".delete-sequence", function (e) {
+        e.stopPropagation();
+
+        const sequenceName = $(this).data("sequence-name");
+
+        if (
+            !confirm(
+                'Delete sequence "' +
+                    sequenceName +
+                    '"? This cannot be undone.',
+            )
+        ) {
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'hive:dj_command_safe' object.pk %}",
+            data: {
+                command: "delete_sequence",
+                sequence_name: sequenceName,
+            },
+            dataType: "json",
+            success: function (response) {
+                if (response.success) {
+                    alert(
+                        '✓ Sequence "' +
+                            sequenceName +
+                            '" deleted successfully!',
+                    );
+                    loadSavedSequences(); // Refresh the list
+
+                    // Clear the name input if it matches the deleted sequence
+                    if ($("#sequence-name").val() === sequenceName) {
+                        $("#sequence-name").val("");
+                    }
+                } else {
+                    alert("Delete failed: " + response.message);
+                }
+            },
+            error: function () {
+                alert("Failed to delete sequence!");
+            },
+        });
+    });
+
+    // Macro recording
+    $("#record_macro").on("click", function () {
+        isRecordingMacro = true;
+        currentMacro = [];
+        $(this).prop("disabled", true);
+        $("#stop_macro").prop("disabled", false);
+        alert("Macro recording started! Perform actions to record them.");
+    });
+
+    $("#stop_macro").on("click", function () {
+        isRecordingMacro = false;
+        $(this).prop("disabled", true);
+        $("#record_macro").prop("disabled", false);
+        $("#play_macro").prop("disabled", false);
+        alert(`Macro recorded with ${currentMacro.length} actions!`);
+    });
+
+    $("#play_macro").on("click", function () {
+        if (currentMacro.length === 0) {
+            alert("No macro recorded!");
+            return;
+        }
+
+        sendDJCommand("play_macro", { macro_actions: currentMacro });
+    });
+
+    // 60-Second Laugh Test Controls
+    $("#test_repeated_behavior").on("click", function () {
+        const duration = parseInt($("#test_duration").val()) || 60;
+        $("#test_status").text("Running Option A - Repeated Behavior...");
+        $(this).prop("disabled", true);
+        $("#test_laugh_sequence").prop("disabled", true);
+
+        sendDJCommand("repeated_behavior", {
+            behavior_name: "Bht_Vg_Laugh_Big_Fourcount",
+            duration_seconds: duration,
+        });
+
+        // Re-enable buttons after duration + buffer
+        setTimeout(
+            function () {
+                $("#test_repeated_behavior").prop("disabled", false);
+                $("#test_laugh_sequence").prop("disabled", false);
+                $("#test_status").text("Ready");
+            },
+            (duration + 2) * 1000,
+        );
+    });
+
+    $("#test_laugh_sequence").on("click", function () {
+        $("#test_status").text("Running Option B - Pre-built Sequence...");
+        $(this).prop("disabled", true);
+        $("#test_repeated_behavior").prop("disabled", true);
+
+        sendDJCommand("laugh_60s", {});
+
+        // Re-enable buttons after 60 seconds + buffer
+        setTimeout(function () {
+            $("#test_repeated_behavior").prop("disabled", false);
+            $("#test_laugh_sequence").prop("disabled", false);
+            $("#test_status").text("Ready");
+        }, 62000);
+    });
+
+    $("#stop_laugh_test").on("click", function () {
+        $("#test_status").text("Stopping...");
+        sendDJCommand("interrupt", {});
+
+        setTimeout(function () {
+            $("#test_repeated_behavior").prop("disabled", false);
+            $("#test_laugh_sequence").prop("disabled", false);
+            $("#test_status").text("Ready");
+        }, 1000);
+    });
+
+    // Initialize
+    $(document).ready(function () {
+        console.log("DJ Panel initializing...");
+        console.log("Found action buttons:", $(".action-btn").length);
+        console.log("Found behavior buttons:", $(".behavior-btn").length);
+        console.log("Found sound effect buttons:", $(".sfx-btn").length);
+        console.log("Found preset buttons:", $(".preset-btn").length);
+
+        // Test if jQuery is working
+        console.log("jQuery version:", $.fn.jquery);
+
+        // Debug: List all buttons with their data attributes
+        $(".action-btn").each(function (i, btn) {
+            console.log(
+                "Action button",
+                i,
+                ":",
+                $(btn).data("action"),
+                $(btn).text(),
+            );
+        });
+
+        $(".behavior-btn").each(function (i, btn) {
+            console.log(
+                "Behavior button",
+                i,
+                ":",
+                $(btn).data("behavior"),
+                $(btn).text(),
+            );
+        });
+
+        // Test click detection on any button
+        $(document).on("click", "button", function (e) {
+            console.log(
+                "Generic button click detected:",
+                $(this).attr("class"),
+                $(this).text(),
+            );
+        });
+
+        // Auto-enable DJ mode when panel loads
+        console.log("Auto-enabling DJ mode...");
+        setDJMode(true);
+
+        // Load saved sequences
+        loadSavedSequences();
+
+        refreshDJStatus();
+    });
 </script>
 {% endblock %}

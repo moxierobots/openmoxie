@@ -1,6 +1,5 @@
 import random
 import logging
-import numpy
 from .util import run_db_atomic
 from ..models import MoxieDevice,MentorBehavior
 from ..content.data import RECOMMENDABLE_MODULES, TNT_CIDS, SYSTEMSCHECK_CIDS
@@ -98,7 +97,7 @@ def expand_schedule(schedule, device_id):
 
         # insert some random chats
         if chat_count > 0 and len(chat_modules) > 0:
-            generated_chats = list(numpy.random.choice(chat_modules, size=chat_count, replace=True))
+            generated_chats = random.choices(chat_modules, k=chat_count)
             generated = distribute_elements(generated, generated_chats)
 
         # make a copy, so we don't alter the original
