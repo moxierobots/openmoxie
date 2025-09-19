@@ -4,13 +4,17 @@ services:
       context: ./
       dockerfile: ./emqx.Dockerfile
     ports:
-      - "1883:1883" # Unencrypted MQTT
-      - "8883:8883" # TLS MQTT
-      - "8083:8083" # WebSocket MQTT
-      - "8084:8084" # Secure WebSocket MQTT
-      - "18083:18083" # Dashboard
+      - "1883:1883"  # Unencrypted MQTT
+      - "8883:8883"  # TLS MQTT
+      - "8083:8083"  # WebSocket MQTT
+      - "8084:8084"  # Secure WebSocket MQTT
+      - "18083:18083"  # Dashboard
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./emqx/data:/opt/emqx/data
+      - ./emqx/log:/opt/emqx/log
+      - ./emqx/etc:/opt/emqx/etc
     environment:
       - EMQX_NODE__COOKIE=openmoxie_secure_cookie_2024
       - EMQX_LOG__CONSOLE__ENABLE=true
@@ -21,7 +25,7 @@ services:
       - EMQX_LISTENERS__WS__DEFAULT__BIND=0.0.0.0:8083
       - EMQX_LISTENERS__WS__DEFAULT__WEBSOCKET__MQTT_PATH=/mqtt
       - EMQX_DASHBOARD__LISTENERS__HTTP__BIND=18083
-      - EMQX_AUTHORIZATION__NO_MATCH=allow
+      - EMQX_AUTHORIZATION__NO_MATCH=deny
   server:
     build:
       context: ./
@@ -34,18 +38,8 @@ services:
       - ./local/work:/app/site/work
     command: ["bash", "start_server.sh"]
     env_file: .env
-    environment:
-      - MQTT_PORT=1883
-      - MQTT_CERT_REQUIRED=false
     depends_on:
       - mqtt
-      - postgres
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
   postgres:
     image: postgres:17-alpine
     ports:
@@ -56,11 +50,6 @@ services:
       POSTGRES_DB: openmoxie
     volumes:
       - postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U openmoxie -d openmoxie"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres:

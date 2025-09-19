@@ -20,11 +20,7 @@ from .moxie_remote_chat import RemoteChat
 from .protos.embodied.logging.Log_pb2 import ProtoSubscribe
 from .protos.embodied.logging.Cloud2_pb2 import ServiceConfiguration2
 from .protos.embodied.wifiapp.QRCommands_pb2 import StartPairingQR
-try:
-    from .zmq_stt_handler import STTHandler
-except Exception as e:
-    STTHandler = None
-    logging.getLogger(__name__).warning("STT handler unavailable: %s", e)
+from .zmq_stt_handler import STTHandler
 from ..models import HiveConfiguration
 
 _BASIC_FORMAT = '{1}'
@@ -79,7 +75,8 @@ class MoxieServer:
         self._client = mqtt.Client(client_id=self._mqtt_client_id, transport="tcp")
         if self._cert_required:
             self._client.tls_set()
-        # No TLS configuration when cert_required=False for unencrypted MQTT
+        else:
+            self._client.tls_set(cert_reqs=ssl.CERT_NONE)
         self._client.on_connect = self.on_connect
         self._client.on_message = self.on_message
         self._topic_handlers = None
@@ -93,12 +90,18 @@ class MoxieServer:
         self._running = False
         self._background_thread = None
         self._process_id = os.getpid()
+        self._is_gevent = self._detect_gevent()
         self.update_from_database()
         # Register cleanup on process exit
         atexit.register(self._cleanup_on_exit)
-        # Note: _is_gevent detection removed as it was not implemented
 
-
+    def _detect_gevent(self):
+        """Detect if we're running under gevent"""
+        try:
+            import gevent
+            return hasattr(gevent, 'monkey') and gevent.monkey.is_module_patched('socket')
+        except ImportError:
+            return False
 
     # Connect to the broker - the jwt stuff left in place, but isn't required
     def connect(self, auto_start = True):
@@ -160,7 +163,7 @@ class MoxieServer:
             else:
                 logger.debug(f"Rx UNK topic: {dec}")
         except Exception as e:
-            logger.exception("Error handling mqtt message")
+            logging.exception("Error handling mqtt messsage:")
 
 
     # Handle messages FROM mosquitto syslog topic, looking for connect/disconnects
@@ -391,9 +394,6 @@ class MoxieServer:
             self._running = False
             logger.info(f"Stopping MQTT client for process {self._process_id}")
             self._client.loop_stop()
-            # Properly shutdown worker queue
-            if hasattr(self, '_worker_queue'):
-                self._worker_queue.shutdown(wait=True)
             if self._background_thread and self._background_thread.is_alive():
                 self._background_thread.join(timeout=5)
 
@@ -402,9 +402,6 @@ class MoxieServer:
         if self._running and os.getpid() == self._process_id:
             logger.info(f"Cleaning up MQTT client for process {self._process_id}")
             self.stop()
-            # Clean up thread pool
-            if hasattr(self, '_worker_queue'):
-                self._worker_queue.shutdown(wait=False)
 
     # Get's a chat session object for use in the web chat
     def get_web_session_for_module(self, device_id, module_id, content_id):
@@ -503,10 +500,7 @@ def create_service_instance(project_id, host, port, cert_required=True):
         creds = RobotCredentials(True)
         rbdata = RobotData()
         _MOXIE_SERVICE_INSTANCE = MoxieServer(creds, rbdata, project_id, host, port, cert_required)
-        if STTHandler is not None:
-            _MOXIE_SERVICE_INSTANCE.add_zmq_handler('embodied.perception.audio.zmqSTTRequest', STTHandler(_MOXIE_SERVICE_INSTANCE))
-        else:
-            logger.warning("Skipping STT handler registration; STTHandler is unavailable")
+        _MOXIE_SERVICE_INSTANCE.add_zmq_handler('embodied.perception.audio.zmqSTTRequest', STTHandler(_MOXIE_SERVICE_INSTANCE))
         _MOXIE_SERVICE_INSTANCE.connect(auto_start=True)
 
     return _MOXIE_SERVICE_INSTANCE

@@ -8,7 +8,7 @@ custom methods.
 Global commands are GLOBAL, so if you make a global command that hadles .*, it will usurp
 ALL inputs and make your bot non-functional.  It is best to make patterns as NARROW as
 possible to avoid triggering them when you don't intend to.  Matching uses searching,
-but can be constrained to whole sentence matching using ^moxie time$ for instance to
+but can be constrained to whole sentence matching using ^moxie time$ for instance to 
 catch "moxie time" but ignore "moxie time is something i dont have"
 '''
 from concurrent.futures import ThreadPoolExecutor,TimeoutError
@@ -35,7 +35,7 @@ class ActionPattern:
         if matches:
             return partial(self.create_response, matches, volley)
         return None
-
+    
     def create_response(self, matches, volley:Volley):
         volley.set_output(self._source.response_text, self._source.response_markup, output_type='GLOBAL_COMMAND')
         if self._action:
@@ -97,23 +97,21 @@ class GlobalResponses:
 
     def update_from_database(self):
         self._patterns = []
-        # Temporarily disabled due to model mismatch - GlobalResponse model doesn't have 'action' or 'pattern' fields
-        # for gr in GlobalResponse.objects.all().order_by('-priority'):
-        #     if gr.action == GlobalAction.LAUNCH.value:
-        #         logger.info(f'Loading GlobalResponse LAUNCH type {gr}')
-        #         self._patterns.append(ActionPattern(gr, action="launch"))
-        #     elif gr.action == GlobalAction.CONFIRM_LAUNCH.value:
-        #         logger.info(f'Loading GlobalResponse CONFIRM_LAUNCH type {gr}')
-        #         self._patterns.append(ActionPattern(gr, action="launch_if_confirmed"))
-        #     elif gr.action == GlobalAction.RESPONSE.value:
-        #         logger.info(f'Loading GlobalResponse RESPONSE type {gr}')
-        #         self._patterns.append(ActionPattern(gr))
-        #     elif gr.action == GlobalAction.METHOD.value:
-        #         logger.info(f'Loading GlobalResponse CUSTOM METHOD type {gr}')
-        #         self._patterns.append(MethodPattern(gr))
-        #     else:
-        #         logger.warning(f"Unsupported type {gr.action} in GlobalResponse {gr.name}")
-        logger.debug(f"Loaded {len(self._patterns)} global response patterns from database (temporarily disabled)")
+        for gr in GlobalResponse.objects.all().order_by('-sort_key'):
+            if gr.action == GlobalAction.LAUNCH.value:
+                logger.info(f'Loading GlobalResponse LAUNCH type {gr}')                
+                self._patterns.append(ActionPattern(gr, action="launch"))
+            elif gr.action == GlobalAction.CONFIRM_LAUNCH.value:
+                logger.info(f'Loading GlobalResponse CONFIRM_LAUNCH type {gr}')                
+                self._patterns.append(ActionPattern(gr, action="launch_if_confirmed"))
+            elif gr.action == GlobalAction.RESPONSE.value:
+                logger.info(f'Loading GlobalResponse RESPONSE type {gr}')
+                self._patterns.append(ActionPattern(gr))
+            elif gr.action == GlobalAction.METHOD.value:
+                logger.info(f'Loading GlobalResponse CUSTOM METHOD type {gr}')
+                self._patterns.append(MethodPattern(gr))
+            else:
+                logger.warning(f"Unsupported type {gr.action} in GlobalResponse {gr.name}")
 
     def check_global(self, volley:Volley):
         speech = volley.request.get('speech')

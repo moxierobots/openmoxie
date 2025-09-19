@@ -10,7 +10,6 @@ import json
 import os
 import logging
 import deepmerge
-import threading
 from django.db import connections
 from django.db import transaction
 from ..models import HiveConfiguration, MoxieDevice, MoxieSchedule, MentorBehavior, PersistentData
@@ -68,7 +67,6 @@ class RobotData:
     def __init__(self):
         global DEFAULT_SCHEDULE
         self._robot_map = {}
-        self._lock = threading.RLock()  # Use RLock for recursive locking
         db_default = MoxieSchedule.objects.filter(name="default").first()
         if db_default:
             logger.info("Using 'default' schedule from database as schedule fallback")
@@ -78,41 +76,36 @@ class RobotData:
 
     # Called when Robot connects to the MQTT network from a worker thread
     def db_connect(self, robot_id):
-        with self._lock:
-            if robot_id in self._robot_map:
-                # Known only when cache record isnt empty
-                if self._robot_map[robot_id]:
-                    logger.info(f'Device {robot_id} already known.')
-                    return
+        if robot_id in self._robot_map:
+            # Known only when cache record isnt empty
+            if self._robot_map[robot_id]:
+                logger.info(f'Device {robot_id} already known.')
+                return
         logger.info(f'Device {robot_id} is LOADING.')
         run_db_atomic(self.init_from_db, robot_id)
 
     # Called when a Robot disconnects from the MQTT network from a worker thread
     def db_release(self, robot_id):
-        with self._lock:
-            if robot_id in self._robot_map:
-                logger.info(f'Releasing device data for {robot_id}')
-                run_db_atomic(self.release_to_db, robot_id)
-                del self._robot_map[robot_id]
+        if robot_id in self._robot_map:
+            logger.info(f'Releasing device data for {robot_id}')
+            run_db_atomic(self.release_to_db, robot_id)
+            del self._robot_map[robot_id]
 
     # Check if init after connection for this bot is needed, and remember it so we only init once
     def connect_init_needed(self, robot_id):
-        with self._lock:
-            needed = robot_id not in self._robot_map
-            if needed:
-                # set an empty record, so we don't try again
-                self._robot_map[robot_id] = {}
-            return needed
+        needed = robot_id not in self._robot_map
+        if needed:
+            # set an empty record, so we don't try again
+            self._robot_map[robot_id] = {}
+        return needed
 
     # Check if a device is online
     def device_online(self, robot_id):
-        with self._lock:
-            return robot_id in self._robot_map
+        return robot_id in self._robot_map
 
     # Get a list of online robots
     def connected_list(self):
-        with self._lock:
-            return list(self._robot_map.keys())
+        return list(self._robot_map.keys())
 
     # Build a configuration record for a robot
     def build_config(self, device, hive_cfg):
@@ -135,20 +128,17 @@ class RobotData:
             if schedule:
                 logger.info(f'Setting schedule to {schedule}')
                 device.schedule = schedule
-                with self._lock:
-                    self._robot_map[robot_id] = { "schedule": schedule.schedule }
+                self._robot_map[robot_id] = { "schedule": schedule.schedule }
             else:
                 logger.warning('Failed to locate default schedule.')
         else:
             logger.info(f'Existing model for this device {robot_id}')
-            with self._lock:
-                self._robot_map[robot_id] = { "schedule": device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE }
+            self._robot_map[robot_id] = { "schedule": device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE }
         # build our config
-        with self._lock:
-            self._robot_map[robot_id]["config"] = self.build_config(device, curr_cfg)
-            # load our robot's persistent data
-            persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
-            self._robot_map[robot_id]["persistent_data"] = persistent_data
+        self._robot_map[robot_id]["config"] = self.build_config(device, curr_cfg)
+        # load our robot's persistent data
+        persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
+        self._robot_map[robot_id]["persistent_data"] = persistent_data
         device.save()
 
     # Finalize device record on disconnect
@@ -158,20 +148,18 @@ class RobotData:
             device.last_disconnect = timezone.now()
             device.save()
         # save persistent data for the robot
-        with self._lock:
-            pdata = self._robot_map.get(robot_id, {}).get("persistent_data")
+        pdata = self._robot_map.get(robot_id, {}).get("persistent_data")
         if pdata:
             pdata.save()
 
     # Get persist record, cached or from db
     def get_persist_for_device(self, device:MoxieDevice):
-        with self._lock:
-            if device.device_id in self._robot_map:
-                prec = self._robot_map[device.device_id].get("persistent_data")
-                return prec.data if prec else {}
-        # Database access outside lock
-        persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
-        return persistent_data.data
+        if device.device_id in self._robot_map:
+            prec = self._robot_map[device.device_id].get("persistent_data")
+            return prec.data if prec else {}
+        else:
+            persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
+            return persistent_data.data
 
     # Get the active configuration for a device from the database objects
     def get_config_for_device(self, device):
@@ -181,16 +169,14 @@ class RobotData:
     # Update an active device config, and return if the device is connected and needs the config provided
     def config_update_live(self, device):
         if self.device_online(device.device_id):
-            with self._lock:
-                self._robot_map[device.device_id]["config"] = self.get_config_for_device(device)
+            self._robot_map[device.device_id]["config"] = self.get_config_for_device(device)
             return True
         return False
 
     # Get the cached config record for a robot
     def get_config(self, robot_id):
-        with self._lock:
-            robot_rec = self._robot_map.get(robot_id, {})
-            cfg = robot_rec.get("config", DEFAULT_COMBINED_CONFIG)
+        robot_rec = self._robot_map.get(robot_id, {})
+        cfg = robot_rec.get("config", DEFAULT_COMBINED_CONFIG)
         logger.debug(f'Providing config {cfg} to {robot_id}')
         return cfg
 
