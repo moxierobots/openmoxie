@@ -221,7 +221,7 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'level': LOG_LEVEL,
             'propagate': False,
         },
         'django.request': {
@@ -233,6 +233,11 @@ LOGGING = {
             'handlers': ['console', 'sentry'],
             'level': 'ERROR',
             'propagate': False,
+        },
+        "django.utils.autoreload": {
+            "handlers": ["console"],
+            "level": "INFO",  # change to WARNING or ERROR if you want less noise
+            "propagate": False,
         },
         'hive': {
             'handlers': ['console'],
